@@ -105,11 +105,30 @@ esac
 
 case "$PLATFORM" in
     linux-x86_64)
-        if [[ -x ./buildcpu.sh ]]; then
-            ./buildcpu.sh
-        else
-            cmake -B build -DCMAKE_BUILD_TYPE=Release
-            cmake --build build --config Release -j
+        # Prefer GGML's Vulkan backend for AMD/Intel GPU acceleration,
+        # but degrade to CPU when the Vulkan dev deps (glslc, SPIRV
+        # headers) are absent — same graceful-fallback pattern as
+        # linux-aarch64 below.
+        VULKAN_BUILT=0
+        if command -v glslc >/dev/null 2>&1 &&
+            printf '#include <spirv/unified1/spirv.hpp>\nint main(){}\n' |
+                c++ -fsyntax-only -x c++ - 2>/dev/null; then
+            if cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON &&
+                cmake --build build --config Release -j; then
+                VULKAN_BUILT=1
+            else
+                echo "→ Vulkan build failed; retrying Linux x86_64 with CPU." >&2
+                rm -rf build
+            fi
+        fi
+        if [[ "$VULKAN_BUILT" -eq 0 ]]; then
+            rm -rf build
+            if [[ -x ./buildcpu.sh ]]; then
+                ./buildcpu.sh
+            else
+                cmake -B build -DCMAKE_BUILD_TYPE=Release
+                cmake --build build --config Release -j
+            fi
         fi
         cp -v build/omnivoice-tts "$BIN_DIR/$OUT_NAME"
         copy_shared_libs
@@ -146,8 +165,22 @@ case "$PLATFORM" in
     windows-x86_64)
         # CI runs this from MSYS / git-bash; CMake picks up the MSVC
         # toolchain via the GitHub Actions runner's default env.
-        cmake -B build -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release -j
+        # Prefer GGML's Vulkan backend for AMD/Intel/NVIDIA GPU acceleration on Windows,
+        # but degrade to CPU when Vulkan dependencies are absent.
+        VULKAN_BUILT=0
+        if [[ -n "$VULKAN_SDK" ]] || command -v glslc >/dev/null 2>&1; then
+            if cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON &&
+                cmake --build build --config Release -j; then
+                VULKAN_BUILT=1
+            else
+                echo "→ Vulkan build failed; retrying Windows x86_64 with CPU." >&2
+                rm -rf build
+            fi
+        fi
+        if [[ "$VULKAN_BUILT" -eq 0 ]]; then
+            cmake -B build -DCMAKE_BUILD_TYPE=Release
+            cmake --build build --config Release -j
+        fi
         cp -v build/Release/omnivoice-tts.exe "$BIN_DIR/$OUT_NAME"
         copy_shared_libs
         ;;

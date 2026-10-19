@@ -81,6 +81,10 @@ _HF_REPO_ID = "Serveurperso/OmniVoice-GGUF"
 _HF_TOKEN_RE = re.compile(r"hf_[A-Za-z0-9]{30,}")
 _HF_TOKEN_MASK = "hf_***REDACTED***"
 
+#: Optional overrides for compute backend and device index.
+BACKEND_ENV = "OMNIVOICE_GGUF_BACKEND"
+DEVICE_ENV = "OMNIVOICE_GGUF_DEVICE"
+
 
 def _mask_token(s: str) -> str:
     """Belt-and-suspenders token redaction. Used on captured stderr
@@ -382,7 +386,7 @@ def _make_backend_class():
         id = "omnivoice-gguf"
         display_name = "OmniVoice (GGUF, hardware-adaptive)"
         instruct_vocabulary = "tags"
-        gpu_compat = ("cuda", "mps", "cpu")
+        gpu_compat = ("cuda", "vulkan", "mps", "cpu")
         supports_voice_design = False
         # Every generate() spawns the external binary — allocations live in
         # that process, invisible to parent-side accelerator counters.
@@ -730,6 +734,12 @@ def _make_backend_class():
                 "--codec", str(tokenizer),
                 "-o", str(out_path),
             ]
+            backend_override = os.environ.get(BACKEND_ENV, "").strip()
+            if backend_override:
+                argv += ["--backend", backend_override]
+            device_override = os.environ.get(DEVICE_ENV, "").strip()
+            if device_override:
+                argv += ["--device", device_override]
             lang = _iso_to_omnivoice_lang(language)
             if lang:
                 argv += ["--lang", lang]

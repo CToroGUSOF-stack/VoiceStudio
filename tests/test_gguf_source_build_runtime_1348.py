@@ -18,6 +18,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tomllib
 from pathlib import Path
 
@@ -211,7 +212,7 @@ fi
     result = subprocess.run(
         [
             "bash",
-            str(scripts / "build-omnivoice-tts.sh"),
+            (scripts / "build-omnivoice-tts.sh").as_posix(),
             "--platform",
             "linux-aarch64",
             "--commit-sha",
@@ -226,6 +227,7 @@ fi
     return result, log
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Linux ARM bash build test requires POSIX environment")
 @pytest.mark.parametrize(
     ("prerequisites", "fail_configure", "fail_build"),
     [

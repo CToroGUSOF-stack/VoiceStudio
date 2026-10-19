@@ -16,6 +16,10 @@ metadata and the backend fallback mirror it.
 
 - Preview iOS and Android companion apps: drive your own VoiceStudio from your phone (speak, voices and cloning, dubbing, dictation) after pairing by QR code; build from source for now ([guide](docs/mobile.md)) (#2965)
 
+### Changed
+
+- Vulkan GPU acceleration for OmniVoice GGUF (`omnivoice-gguf`), enabling hardware acceleration on AMD Radeon and cross-vendor GPUs across Windows and Linux
+
 ### Docs
 
 - Contributor guides and the pull request template explain how to sign the CLA before opening a first pull request (#2676)

@@ -21,6 +21,7 @@ from core.device_caps import (
     DIRECTML_MARKER,
     KERNEL_RISK_MARKER,
     UNUSABLE_GPU_MARKER,
+    VULKAN_MARKER,
     HostCaps,
 )
 
@@ -169,6 +170,20 @@ def resolve_routing(
     if fam != "cpu" and fam in targets:
         return {
             "effective_device": fam,
+            "routing_status": "accelerated",
+            "routing_reason": _caveat(caps, min_vram_gb),
+        }
+
+    # 2b. Engine supports Vulkan and a Vulkan runtime is present on the host
+    #     (and the user hasn't explicitly pinned compute to CPU)
+    #     → accelerated via Vulkan (e.g. AMD GPU on Windows or Linux).
+    if (
+        "vulkan" in targets
+        and getattr(caps, "requested_family", "auto") != "cpu"
+        and any(VULKAN_MARKER in n for n in caps.notes)
+    ):
+        return {
+            "effective_device": "vulkan",
             "routing_status": "accelerated",
             "routing_reason": _caveat(caps, min_vram_gb),
         }
