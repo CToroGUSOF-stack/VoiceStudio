@@ -9,6 +9,7 @@ from __future__ import annotations
 import pytest
 
 from services.longform_render import (
+    CacheLease,
     LOUDNESS_PRESETS,
     MeasuredLoudness,
     build_concat_list,
@@ -281,6 +282,68 @@ def test_prune_cache_evicts_oldest_first(tmp_path):
 
 def test_prune_cache_missing_dir_is_safe(tmp_path):
     assert prune_cache_dir(str(tmp_path / "nope")) == (0, 0)
+
+
+def test_prune_keeps_leased_files_but_evicts_unused_audio(tmp_path):
+    chapter = _seed(tmp_path, "chapter.wav", 600, age_s=100)
+    unused = _seed(tmp_path, "unused.wav", 100, age_s=1)
+    lease = CacheLease()
+    try:
+        lease.hold(str(chapter))
+        assert prune_cache_dir(str(tmp_path), max_bytes=0) == (600, 1)
+        assert chapter.is_file()
+        assert not unused.exists()
+    finally:
+        lease.release()
+    assert prune_cache_dir(str(tmp_path), max_bytes=0) == (0, 1)
+
+
+def test_cache_lease_counts_overlapping_jobs_and_normalizes_paths(tmp_path):
+    chapter = _seed(tmp_path, "chapter.wav", 100, age_s=1)
+    first, second = CacheLease(), CacheLease()
+    try:
+        first.hold(str(chapter))
+        first.hold(str(chapter))  # one render may repeat a chapter
+        second.hold(str(tmp_path / "unused" / ".." / chapter.name))
+        first.release()
+        first.release()
+        assert prune_cache_dir(str(tmp_path), max_bytes=0) == (100, 0)
+    finally:
+        first.release()
+        second.release()
+    assert prune_cache_dir(str(tmp_path), max_bytes=0) == (0, 1)
+
+
+def test_cancelled_cache_lease_cannot_be_reopened_by_late_worker(tmp_path):
+    lease = CacheLease()
+    lease.release()
+    chapter = _seed(tmp_path, "late.wav", 100, age_s=1)
+    lease.hold(str(chapter))
+    assert prune_cache_dir(str(tmp_path), max_bytes=0) == (0, 1)
+
+
+def test_cache_lease_keeps_active_temporary_wavs_but_prunes_abandoned_ones(tmp_path):
+    lease = CacheLease()
+    try:
+        lease.hold(str(tmp_path / "chapter.wav"))
+        active = _seed(tmp_path, ".chapter.wav.active.wav", 100, age_s=2)
+        abandoned = _seed(tmp_path, ".other.wav.abandoned.wav", 50, age_s=1)
+        assert prune_cache_dir(str(tmp_path), max_bytes=0) == (100, 1)
+        assert active.exists() and not abandoned.exists()
+    finally:
+        lease.release()
+    assert prune_cache_dir(str(tmp_path), max_bytes=0) == (0, 1)
+
+
+def test_cache_lease_reserves_a_file_before_publication(tmp_path):
+    lease = CacheLease()
+    path = tmp_path / "chapter.wav"
+    try:
+        lease.hold(str(path))
+        path.write_bytes(b"audio")
+        assert prune_cache_dir(str(tmp_path), max_bytes=0) == (5, 0)
+    finally:
+        lease.release()
 
 
 # ── #28 two-pass loudnorm: measure filter ───────────────────────────────────

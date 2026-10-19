@@ -20,6 +20,10 @@ metadata and the backend fallback mirror it.
 
 - Contributor guides and the pull request template explain how to sign the CLA before opening a first pull request (#2676)
 
+### Fixed
+
+- Audiobook and Stories renders retain cached progress during resume and overlapping jobs, and keep recovery checkpoints when output assembly fails (#2318) — thanks @Bortlesboat!
+
 ### CI
 
 - Desktop request-guard self-tests stay deterministic when app requests arrive during cleanup (#2676)

@@ -37,6 +37,8 @@ import json
 import math
 import os
 import re
+import threading
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Optional
@@ -50,6 +52,37 @@ _BITRATE_RE = re.compile(r"^\d{2,3}k$")
 _CACHE_MAX_BYTES = int(float(os.environ.get("OMNIVOICE_LONGFORM_CACHE_MAX_GB", "2")) * 1024 ** 3)
 _COVER_EXTS = {".jpg", ".jpeg", ".png"}
 _COVER_MAX_BYTES = 8 * 1024 * 1024  # 8 MB — a book cover, not a payload
+
+_cache_lock = threading.Lock()
+_cache_pins: Counter[str] = Counter()
+
+
+class CacheLease:
+    """Keep a render's cache inputs until mux/cancellation cleanup finishes."""
+
+    def __init__(self) -> None:
+        self._paths: set[str] = set()
+        self._released = False
+
+    def hold(self, path: str) -> str:
+        key = os.path.normcase(os.path.realpath(path))
+        with _cache_lock:
+            # A native worker may finish after its request was cancelled.
+            if not self._released and key not in self._paths:
+                self._paths.add(key)
+                _cache_pins[key] += 1
+        return path
+
+    def release(self) -> None:
+        with _cache_lock:
+            if self._released:
+                return
+            self._released = True
+            for key in self._paths:
+                _cache_pins[key] -= 1
+                if not _cache_pins[key]:
+                    del _cache_pins[key]
+            self._paths.clear()
 
 #: Our metadata field → FFMETADATA tag key. Order is stable for deterministic
 #: output (tested). ``author`` maps to ``artist`` and ``narrator`` to
@@ -86,9 +119,11 @@ def prune_cache_dir(cache_dir: str, max_bytes: int = _CACHE_MAX_BYTES) -> tuple[
     ``segments/`` share ONE byte budget — the cap holds no matter which layer
     grew. Bookkeeping (including the voices-root index needed to find legacy
     WAVs after a data-dir move) is counted but never evicted. Metadata alone may
-    exceed the budget. Best-effort: returns ``(remaining_bytes, removed_count)`` and never
-    raises (a missing dir / unstattable file is just skipped). Call it *before*
-    writing a job's files so the fresh ones are never the eviction target.
+    exceed the budget. Files held by a :class:`CacheLease` are also counted but
+    never evicted. Prune at render exit, before releasing that render's lease:
+    a book larger than the budget keeps its completed work for a later resume.
+    Best-effort: returns ``(remaining_bytes, removed_count)`` and never raises
+    (a missing dir / unstattable file is just skipped).
     """
     entries: list[tuple[float, int, str]] = []
     total = 0
@@ -113,7 +148,18 @@ def prune_cache_dir(cache_dir: str, max_bytes: int = _CACHE_MAX_BYTES) -> tuple[
         if total <= max_bytes:
             break
         try:
-            os.remove(p)
+            with _cache_lock:
+                key = os.path.normcase(os.path.realpath(p))
+                if _cache_pins.get(key, 0):
+                    continue
+                # atomic_save_wav publishes from .<target>.<random>.wav.
+                # The target's lease also protects that unfinished write.
+                temporary = re.fullmatch(r"\.(.+)\.[^.]+\.wav", os.path.basename(key))
+                if temporary and _cache_pins.get(
+                    os.path.join(os.path.dirname(key), temporary[1]), 0,
+                ):
+                    continue
+                os.remove(p)
             total -= size
             removed += 1
         except OSError:
@@ -416,6 +462,7 @@ class SegmentCache:
         extra_sig: str = "",
         vary_repeats: bool = False,
         legacy_voice_sigs: Iterable[dict] = (),
+        lease: Optional[CacheLease] = None,
     ) -> None:
         self.dir = os.path.join(cache_dir, SEGMENT_SUBDIR)
         self.sample_rate = int(sample_rate)
@@ -434,6 +481,7 @@ class SegmentCache:
         self.vary_repeats = bool(vary_repeats)
         self.hits = 0
         self.misses = 0
+        self.lease = lease
 
     def _path(self, span, nonce: int = 0, *, sigs: Optional[dict] = None) -> str:
         sigs = self.voice_sig if sigs is None else sigs
@@ -447,7 +495,8 @@ class SegmentCache:
             extra_sig=self.extra_sig,
             nonce=nonce if self.vary_repeats else 0,
         )
-        return os.path.join(self.dir, f"{key}.wav")
+        path = os.path.join(self.dir, f"{key}.wav")
+        return self.lease.hold(path) if self.lease is not None else path
 
     def _existing_path(self, span, nonce: int = 0) -> Optional[str]:
         """The file holding ``span``'s audio under the current key, adopting a

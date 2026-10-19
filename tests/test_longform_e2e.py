@@ -16,6 +16,7 @@ import json
 import os
 import shutil
 import subprocess
+from pathlib import Path
 
 import pytest
 import torch
@@ -37,15 +38,15 @@ def _resolve(_voice_id):
 
 
 def _stub_build_synth(*, fail_on=None, exc=None):
-    """Return a drop-in for `audiobook._build_synth` whose `synth` emits 0.1s of
-    silence per span. `fail_on(text)` → raise, to exercise per-chapter faults;
+    """Return a drop-in for `audiobook._build_synth` whose `synth` emits a 0.1s
+    tone per span. `fail_on(text)` → raise, to exercise per-chapter faults;
     `exc` overrides what is raised (an engine can fail with an exception whose
     ``str()`` is empty — see the StopIteration case below)."""
     def _factory(default_voice=None, language=None, opts=None, voice_map=None, lease=None):
         def synth(text, voice_id, speed=None):
             if fail_on is not None and fail_on(text):
                 raise exc if exc is not None else RuntimeError("stub synth deliberately failed")
-            return torch.zeros(2400)  # 0.1s @ 24k, 1-D float32
+            return 0.1 * torch.sin(torch.arange(2400) * (2 * torch.pi * 440 / 24000))
         return {"mode": "generic", "resolve": _resolve, "engine_id": "stub",
                 "synth": synth, "sample_rate": 24000}
     return _factory
@@ -98,6 +99,30 @@ def _ffprobe(path):
 
 # ── happy paths ─────────────────────────────────────────────────────────────
 
+def test_pruning_during_atomic_cache_publication_preserves_the_write(tmp_path, monkeypatch):
+    from services.longform_render import LONGFORM_CACHE_SUBDIR, prune_cache_dir
+
+    out = tmp_path / "outputs"
+    cache_dir = out / LONGFORM_CACHE_SUBDIR
+    real_replace = os.replace
+    published = []
+
+    def prune_before_replace(source, target):
+        target = Path(target)
+        if target.suffix == ".wav" and target.is_relative_to(cache_dir):
+            prune_cache_dir(str(cache_dir), max_bytes=0)
+            assert Path(source).is_file(), "pruning removed an active atomic write"
+            published.append(target)
+        return real_replace(source, target)
+
+    monkeypatch.setattr(os, "replace", prune_before_replace)
+    events = _collect_events(_plan(("One", "Hello world.")), monkeypatch, out)
+
+    assert events[-1]["type"] == "done"
+    assert any(path.parent == cache_dir for path in published)
+    assert any(path.parent == cache_dir / "segments" for path in published)
+
+
 def test_m4b_two_chapters_muxes_and_emits_full_sequence(tmp_path, monkeypatch):
     out = tmp_path / "outputs"
     out.mkdir()
@@ -128,6 +153,127 @@ def test_mp3_format_produces_mp3_container(tmp_path, monkeypatch):
     assert out_path.suffix == ".mp3" and out_path.exists()
     if _FFPROBE:
         assert "mp3" in _ffprobe(str(out_path))["format"]["format_name"]
+
+
+def test_resume_larger_than_cache_budget_reuses_finished_chapters(tmp_path, monkeypatch):
+    from api.routers import audiobook
+    from services.longform_render import prune_cache_dir
+
+    monkeypatch.setattr(audiobook, "prune_cache_dir",
+                        lambda path: prune_cache_dir(path, max_bytes=0))
+    polls = 0
+
+    async def disconnect():
+        nonlocal polls
+        polls += 1
+        return polls > 2
+
+    events = _collect_events(
+        _plan(("One", "First."), ("Two", "Second."), ("Three", "Third.")),
+        monkeypatch, tmp_path, is_disconnected=disconnect,
+    )
+    assert events[-1]["type"] == "stopped"
+    job_id = events[0]["job_id"]
+    # A restart days later must not make completed chapters expendable.
+    for path in tmp_path.rglob("*.wav"):
+        os.utime(path, (1, 1))
+
+    async def resume():
+        response = await audiobook.resume_longform(job_id)
+        return [json.loads(frame.removeprefix("data:"))
+                async for frame in response.body_iterator]
+
+    resumed = asyncio.run(asyncio.wait_for(resume(), timeout=120))
+    assert resumed[-1]["type"] == "done", resumed
+    assert [e["cached"] for e in resumed if e["type"] == "chapter"] == [True, True, False]
+    assert (tmp_path / resumed[-1]["output"]).is_file()
+
+
+def test_overlapping_render_cannot_evict_another_jobs_mux_inputs(tmp_path, monkeypatch):
+    from api.routers import audiobook
+    from services.longform_render import prune_cache_dir
+
+    monkeypatch.setattr(audiobook, "_build_synth", _stub_build_synth())
+    monkeypatch.setattr("core.config.OUTPUTS_DIR", str(tmp_path))
+    monkeypatch.setattr(audiobook, "prune_cache_dir",
+                        lambda path: prune_cache_dir(path, max_bytes=0))
+
+    async def run():
+        first = audiobook._render_longform_sse(_plan(("One", "First book.")), default_voice=None)
+        try:
+            assert '"type": "started"' in await anext(first)
+            assert '"type": "chapter"' in await anext(first)
+            second = [json.loads(frame.removeprefix("data:")) async for frame in
+                      audiobook._render_longform_sse(_plan(("Two", "Second book.")), default_voice=None)]
+            assert second[-1]["type"] == "done", second
+            return [json.loads(frame.removeprefix("data:")) async for frame in first]
+        finally:
+            await first.aclose()
+
+    remaining = asyncio.run(asyncio.wait_for(run(), timeout=120))
+    assert remaining[-1]["type"] == "done", remaining
+    assert (tmp_path / remaining[-1]["output"]).is_file()
+    prune_cache_dir(str(tmp_path / "longform_cache"), max_bytes=0)
+    assert not list((tmp_path / "longform_cache").rglob("*.wav"))
+
+
+def test_closing_render_keeps_progress_without_leaking_cache_pins(tmp_path, monkeypatch):
+    from api.routers import audiobook
+    from services.longform_render import LONGFORM_CACHE_SUBDIR, prune_cache_dir
+
+    monkeypatch.setattr(audiobook, "_build_synth", _stub_build_synth())
+    monkeypatch.setattr("core.config.OUTPUTS_DIR", str(tmp_path))
+    monkeypatch.setattr(audiobook, "prune_cache_dir",
+                        lambda path: prune_cache_dir(path, max_bytes=0))
+
+    async def run():
+        stream = audiobook._render_longform_sse(
+            _plan(("One", "First."), ("Two", "Second.")), default_voice=None,
+        )
+        try:
+            assert '"type": "started"' in await anext(stream)
+            assert '"type": "chapter"' in await anext(stream)
+        finally:
+            await stream.aclose()
+
+    asyncio.run(asyncio.wait_for(run(), timeout=120))
+    cache = tmp_path / LONGFORM_CACHE_SUBDIR
+    assert list(cache.glob("*.wav"))
+    assert list((cache / "segments").glob("*.wav"))
+    prune_cache_dir(str(cache), max_bytes=0)
+    assert not list(cache.rglob("*.wav"))
+
+
+def test_failed_mux_keeps_checkpoint_and_reports_failure(tmp_path, monkeypatch):
+    from api.routers import audiobook
+    from core import db, job_store
+    from services import longform_resume
+    from services.longform_render import LONGFORM_CACHE_SUBDIR
+
+    monkeypatch.setattr(db, "DB_PATH", str(tmp_path / "jobs.db"))
+    db.init_db()
+    monkeypatch.setattr(audiobook, "_build_synth", _stub_build_synth())
+    monkeypatch.setattr("core.config.OUTPUTS_DIR", str(tmp_path))
+
+    async def run():
+        events = []
+        async for frame in audiobook._render_longform_sse(
+            _plan(("One", "First book.")), default_voice=None,
+        ):
+            event = json.loads(frame.removeprefix("data:"))
+            events.append(event)
+            if event["type"] == "assembling":
+                # External deletion/disk failure can still remove an input.
+                # Exercise real ffmpeg's nonzero exit, not a raised exception.
+                for path in (tmp_path / LONGFORM_CACHE_SUBDIR).glob("*.wav"):
+                    path.unlink()
+        return events
+
+    events = asyncio.run(asyncio.wait_for(run(), timeout=120))
+    assert events[-1]["type"] == "error", events
+    job_id = events[0]["job_id"]
+    assert job_store.get(job_id)["status"] == "failed"
+    assert longform_resume.read_manifest("audiobook", job_id) is not None
 
 
 # ── partial / total failure ─────────────────────────────────────────────────
@@ -325,7 +471,7 @@ def test_no_ffmpeg_errors_before_synth(tmp_path, monkeypatch):
 
 def test_acx_emits_mastering_event_and_loudness_block(tmp_path, monkeypatch):
     """#28: a known loudness preset fires a `mastering` event and adds a
-    `loudness` block to `done` (two-pass on real signal; silent stub → fallback,
+    `loudness` block to `done` (two-pass on measured signal; short tone → fallback,
     two_pass False — either way the wiring + event shape are exercised)."""
     out = tmp_path / "outputs"
     out.mkdir()
@@ -336,6 +482,7 @@ def test_acx_emits_mastering_event_and_loudness_block(tmp_path, monkeypatch):
     assert done["type"] == "done"
     assert done["loudness"]["preset"] == "acx"
     assert "two_pass" in done["loudness"]
+    assert (out / done["output"]).stat().st_size > 0
 
 
 def test_off_path_emits_no_loudness_block(tmp_path, monkeypatch):
