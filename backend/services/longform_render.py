@@ -67,11 +67,28 @@ class CacheLease:
     def hold(self, path: str) -> str:
         key = os.path.normcase(os.path.realpath(path))
         with _cache_lock:
-            # A native worker may finish after its request was cancelled.
-            if not self._released and key not in self._paths:
-                self._paths.add(key)
-                _cache_pins[key] += 1
+            self._hold_locked(key)
         return path
+
+    def _hold_locked(self, key: str) -> None:
+        # A native worker may finish after its request was cancelled.
+        if not self._released and key not in self._paths:
+            self._paths.add(key)
+            _cache_pins[key] += 1
+
+    def hold_existing(self, cache_dir: str) -> None:
+        """Reserve existing audio while asynchronous engine setup resolves keys.
+
+        Use a temporary lease and release it after the plan's exact inputs have
+        their own pins. Snapshot and pruning share a lock, so eviction cannot
+        slip between discovering a later chapter/segment and reserving it.
+        """
+        with _cache_lock:
+            for root, _dirs, names in os.walk(cache_dir):
+                for name in names:
+                    if name.lower().endswith(".wav"):
+                        self._hold_locked(os.path.normcase(os.path.realpath(
+                            os.path.join(root, name))))
 
     def release(self) -> None:
         with _cache_lock:
@@ -509,6 +526,21 @@ class SegmentCache:
             if legacy != path and os.path.isfile(legacy):
                 return adopt_cached_file(legacy, path)
         return None
+
+    def reserve(self, spans: Iterable) -> None:
+        """Hold all possible inputs before any span can suspend the render."""
+        if self.lease is None:
+            return
+        occurrences: Counter = Counter()
+        for span in spans:
+            if not span.text:
+                continue
+            key = (span.voice_id, span.text, getattr(span, "speed", None))
+            nonce = occurrences[key]
+            occurrences[key] += 1
+            self._path(span, nonce)
+            for sigs in self.legacy_voice_sigs:
+                self._path(span, nonce, sigs=sigs)
 
     def load(self, span, nonce: int = 0):
         """Cached audio tensor for ``span``, or ``None`` (miss). A hit bumps

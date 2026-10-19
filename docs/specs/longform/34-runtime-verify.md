@@ -1091,6 +1091,11 @@ built from `_BASE_SCHEMA` (so the job-library cases run against the existing sch
    - **B-evict.** Set `OMNIVOICE_LONGFORM_CACHE_MAX_GB` tiny, pre-seed old WAVs with
      explicit `os.utime` mtimes, render a fresh plan → old entries evicted, the fresh
      chapters survive (cache leases remain held during pruning at render exit).
+     Overlap another render's exit with a multi-chapter resume at `started`, engine
+     preparation, and after its first chapter: later chapter WAVs and reusable
+     segments still hit. Unrelated audio is evictable after plan reservation,
+     and closing the stream releases every pin. Failed or cancelled muxes remove
+     partial MP3/M4B files while retaining the cached audio and resume manifest.
 
 **Partial / total failure (S2):**
 9. **Per-chapter fault isolation**: stub synth raises on chapter index 1 →

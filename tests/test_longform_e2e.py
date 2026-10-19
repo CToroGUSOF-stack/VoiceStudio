@@ -217,6 +217,80 @@ def test_overlapping_render_cannot_evict_another_jobs_mux_inputs(tmp_path, monke
     assert not list((tmp_path / "longform_cache").rglob("*.wav"))
 
 
+@pytest.mark.parametrize("overlap_at", ["started", "preparing", "chapter"])
+@pytest.mark.parametrize("reuse", ["chapters", "segments"])
+def test_resume_reserves_later_inputs_before_overlapping_prune(
+    tmp_path, monkeypatch, overlap_at, reuse,
+):
+    from api.routers import audiobook
+    from services.longform_render import LONGFORM_CACHE_SUBDIR, prune_cache_dir
+
+    monkeypatch.setattr(audiobook, "prune_cache_dir",
+                        lambda path: prune_cache_dir(path, max_bytes=0))
+    polls = 0
+
+    async def disconnect():
+        nonlocal polls
+        polls += 1
+        return polls > 2
+
+    plan = _plan(("One", "First."), ("Two", "Second."), ("Three", "Third."))
+    seeded = _collect_events(plan, monkeypatch, tmp_path, is_disconnected=disconnect)
+    assert seeded[-1]["type"] == "stopped"
+    cache = tmp_path / LONGFORM_CACHE_SUBDIR
+    if reuse == "segments":
+        for path in cache.glob("*.wav"):
+            path.unlink()
+    unrelated = cache / "unrelated.wav"
+    unrelated.write_bytes(b"old unrelated audio")
+    for path in cache.rglob("*.wav"):
+        os.utime(path, (1, 1))
+
+    async def other_render():
+        events = [json.loads(frame.removeprefix("data:")) async for frame in
+                  audiobook._render_longform_sse(
+                      _plan(("Other", "A different book.")), default_voice=None)]
+        assert events[-1]["type"] == "done", events
+
+    prepare = audiobook._prepare_synth
+    overlapped = False
+
+    async def prepare_with_overlap(*args, **kwargs):
+        nonlocal overlapped
+        if overlap_at == "preparing" and not overlapped:
+            overlapped = True
+            await other_render()
+        return await prepare(*args, **kwargs)
+
+    monkeypatch.setattr(audiobook, "_prepare_synth", prepare_with_overlap)
+
+    async def resume():
+        response = await audiobook.resume_longform(seeded[0]["job_id"])
+        events = []
+        async for frame in response.body_iterator:
+            event = json.loads(frame.removeprefix("data:"))
+            events.append(event)
+            if event["type"] == overlap_at and (
+                overlap_at != "chapter" or event["index"] == 0
+            ):
+                await other_render()
+            if event["type"] == "chapter" and event["index"] == 0:
+                prune_cache_dir(str(cache), max_bytes=0)
+                assert not unrelated.exists(), "startup pins outlived plan reservation"
+        return events
+
+    resumed = asyncio.run(asyncio.wait_for(resume(), timeout=120))
+    assert resumed[-1]["type"] == "done", resumed
+    chapters = [event for event in resumed if event["type"] == "chapter"]
+    if reuse == "chapters":
+        assert [chapter["cached"] for chapter in chapters] == [True, True, False]
+    else:
+        assert [chapter["cached_segments"] for chapter in chapters] == [1, 1, 0]
+    assert (tmp_path / resumed[-1]["output"]).is_file()
+    prune_cache_dir(str(cache), max_bytes=0)
+    assert not list(cache.rglob("*.wav")), "a finished render leaked pins"
+
+
 def test_closing_render_keeps_progress_without_leaking_cache_pins(tmp_path, monkeypatch):
     from api.routers import audiobook
     from services.longform_render import LONGFORM_CACHE_SUBDIR, prune_cache_dir
@@ -240,6 +314,34 @@ def test_closing_render_keeps_progress_without_leaking_cache_pins(tmp_path, monk
     cache = tmp_path / LONGFORM_CACHE_SUBDIR
     assert list(cache.glob("*.wav"))
     assert list((cache / "segments").glob("*.wav"))
+    prune_cache_dir(str(cache), max_bytes=0)
+    assert not list(cache.rglob("*.wav"))
+
+
+def test_closing_before_preparation_keeps_existing_progress_without_leaking_pins(
+    tmp_path, monkeypatch,
+):
+    from api.routers import audiobook
+    from services.longform_render import LONGFORM_CACHE_SUBDIR, prune_cache_dir
+
+    plan = _plan(("One", "First."), ("Two", "Second."))
+    assert _collect_events(plan, monkeypatch, tmp_path)[-1]["type"] == "done"
+    cache = tmp_path / LONGFORM_CACHE_SUBDIR
+    existing = set(cache.rglob("*.wav"))
+    monkeypatch.setattr(audiobook, "prune_cache_dir",
+                        lambda path: prune_cache_dir(path, max_bytes=0))
+
+    async def close_before_preparation():
+        stream = audiobook._render_longform_sse(plan, default_voice=None)
+        try:
+            assert '"type": "started"' in await anext(stream)
+            prune_cache_dir(str(cache), max_bytes=0)
+            assert all(path.exists() for path in existing)
+        finally:
+            await stream.aclose()
+
+    asyncio.run(close_before_preparation())
+    assert all(path.exists() for path in existing)
     prune_cache_dir(str(cache), max_bytes=0)
     assert not list(cache.rglob("*.wav"))
 
@@ -277,6 +379,84 @@ def test_failed_mux_keeps_checkpoint_and_reports_failure(tmp_path, monkeypatch):
 
 
 # ── partial / total failure ─────────────────────────────────────────────────
+
+@pytest.mark.parametrize("failure", ["nonzero", "exception", "cancelled"])
+@pytest.mark.parametrize("fmt", ["m4b", "mp3"])
+def test_failed_mux_removes_partial_output_and_keeps_resume(
+    tmp_path, monkeypatch, failure, fmt,
+):
+    from api.routers import audiobook
+    from services import longform_resume
+    from services.longform_render import LONGFORM_CACHE_SUBDIR
+
+    monkeypatch.setattr(audiobook, "_build_synth", _stub_build_synth())
+    monkeypatch.setattr("core.config.OUTPUTS_DIR", str(tmp_path))
+    attempted = []
+
+    async def partial_mux(argv, **kwargs):
+        output = Path(argv[-1])
+        output.write_bytes(b"incomplete encoded audio")
+        attempted.append(output)
+        if failure == "exception":
+            raise RuntimeError("mux interrupted after writing")
+        if failure == "cancelled":
+            raise asyncio.CancelledError()
+        return 1, "", "mux failed"
+
+    monkeypatch.setattr("services.ffmpeg_utils.run_ffmpeg", partial_mux)
+    events = []
+
+    async def render():
+        async for frame in audiobook._render_longform_sse(
+            _plan(("One", "First book.")), default_voice=None, fmt=fmt,
+        ):
+            events.append(json.loads(frame.removeprefix("data:")))
+
+    if failure == "cancelled":
+        with pytest.raises(asyncio.CancelledError):
+            asyncio.run(asyncio.wait_for(render(), timeout=120))
+    else:
+        asyncio.run(asyncio.wait_for(render(), timeout=120))
+        assert events[-1]["type"] == "error", events
+    assert len(attempted) == 1
+    assert not attempted[0].exists(), "failed mux left an incomplete library output"
+    assert not any(event["type"] == "done" for event in events)
+    assert longform_resume.read_manifest("audiobook", events[0]["job_id"]) is not None
+    assert list((tmp_path / LONGFORM_CACHE_SUBDIR).glob("*.wav"))
+
+
+def test_plan_cache_reservation_keeps_bad_voice_failure_in_its_own_chapter(
+    tmp_path, monkeypatch,
+):
+    from api.routers import audiobook
+
+    def resolve(voice_id):
+        if voice_id == "missing":
+            raise ValueError("missing voice")
+        return _resolve(voice_id)
+
+    factory = _stub_build_synth()
+
+    def build(*args, **kwargs):
+        info = factory(*args, **kwargs)
+        info["resolve"] = resolve
+        return info
+
+    monkeypatch.setattr(audiobook, "_build_synth", build)
+    monkeypatch.setattr(audiobook, "_resolve_voice", resolve)
+    monkeypatch.setattr("core.config.OUTPUTS_DIR", str(tmp_path))
+    plan = _plan(("Good", "First."), ("Bad", "Missing."), ("Good too", "Third."))
+    plan.chapters[1].spans[0].voice_id = "missing"
+
+    async def run():
+        return [json.loads(frame.removeprefix("data:")) async for frame in
+                audiobook._render_longform_sse(plan, default_voice=None)]
+
+    events = asyncio.run(asyncio.wait_for(run(), timeout=120))
+    assert events[-1]["type"] == "done", events
+    assert events[-1]["failed_chapters"] == [1]
+    assert [event["index"] for event in events if event["type"] == "chapter"] == [0, 2]
+
 
 def test_partial_failure_isolates_bad_chapter(tmp_path, monkeypatch):
     out = tmp_path / "outputs"

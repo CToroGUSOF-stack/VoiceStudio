@@ -6,6 +6,8 @@ All unit-testable without ffmpeg/torch/GPU.
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from services.longform_render import (
@@ -344,6 +346,54 @@ def test_cache_lease_reserves_a_file_before_publication(tmp_path):
         assert prune_cache_dir(str(tmp_path), max_bytes=0) == (5, 0)
     finally:
         lease.release()
+
+
+def test_startup_cache_snapshot_hands_off_only_plan_inputs(tmp_path):
+    chapter = _seed(tmp_path, "chapter.wav", 100, age_s=1)
+    segments = tmp_path / "segments"
+    segments.mkdir()
+    segment = _seed(segments, "segment.wav", 50, age_s=1)
+    unused = _seed(tmp_path, "unused.wav", 25, age_s=1)
+    startup, plan = CacheLease(), CacheLease()
+    try:
+        startup.hold_existing(str(tmp_path))
+        assert prune_cache_dir(str(tmp_path), max_bytes=0) == (175, 0)
+        plan.hold(str(chapter))
+        plan.hold(str(segment))
+        startup.release()
+        assert prune_cache_dir(str(tmp_path), max_bytes=0) == (150, 1)
+        assert chapter.exists() and segment.exists() and not unused.exists()
+    finally:
+        startup.release()
+        plan.release()
+    assert prune_cache_dir(str(tmp_path), max_bytes=0) == (0, 2)
+
+
+def test_segment_reservation_includes_legacy_and_varied_repeats(tmp_path):
+    from services.audiobook import Span
+    from services.longform_render import SegmentCache
+
+    span = Span(voice_id=None, text="Repeated.")
+    options = dict(sample_rate=24000, engine_id="stub", voice_sig={"": "current"},
+                   legacy_voice_sigs=[{"": "old"}], vary_repeats=True)
+    paths = SegmentCache(str(tmp_path), **options)
+    segments = tmp_path / "segments"
+    segments.mkdir()
+    expected = []
+    for nonce in range(2):
+        for sigs in ({"": "current"}, {"": "old"}):
+            path = Path(paths._path(span, nonce, sigs=sigs))
+            path.write_bytes(b"audio")
+            expected.append(path)
+    unused = _seed(segments, "unused.wav", 25, age_s=1)
+    lease = CacheLease()
+    try:
+        SegmentCache(str(tmp_path), **options, lease=lease).reserve([span, span])
+        assert prune_cache_dir(str(tmp_path), max_bytes=0) == (20, 1)
+        assert all(path.exists() for path in expected) and not unused.exists()
+    finally:
+        lease.release()
+    assert prune_cache_dir(str(tmp_path), max_bytes=0) == (0, 4)
 
 
 # ── #28 two-pass loudnorm: measure filter ───────────────────────────────────
