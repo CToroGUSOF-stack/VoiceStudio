@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -33,13 +34,20 @@ fun mediaDisplayName(context: Context, uri: Uri): String? = context.contentResol
         if(column>=0 && cursor.moveToFirst()) cursor.getString(column)?.takeIf {it.isNotBlank()} else null
     }
 
-suspend fun copyMedia(context: Context, uri: Uri, extension: String): File = withContext(Dispatchers.IO) {
-    val original=mediaDisplayName(context,uri)
-    val suffix=original?.substringAfterLast('.', "")?.lowercase()?.takeIf {Regex("[a-z0-9]{1,10}").matches(it)}
-        ?: android.webkit.MimeTypeMap.getSingleton().getExtensionFromMimeType(context.contentResolver.getType(uri)) ?: extension
-    val file=File(context.filesDir, "uploads/${java.util.UUID.randomUUID()}.$suffix").apply { parentFile!!.mkdirs() }
-    try { context.contentResolver.openInputStream(uri)!!.use { input -> file.outputStream().use { input.copyTo(it) } }; file }
-    catch(e: Exception) { file.delete(); throw e }
+suspend fun copyMedia(context: Context, uri: Uri, extension: String): File {
+    var pending: File?=null
+    try {return withContext(Dispatchers.IO) {
+        val original=mediaDisplayName(context,uri)
+        val suffix=original?.substringAfterLast('.', "")?.lowercase()?.takeIf {Regex("[a-z0-9]{1,10}").matches(it)}
+            ?: android.webkit.MimeTypeMap.getSingleton().getExtensionFromMimeType(context.contentResolver.getType(uri)) ?: extension
+        val file=File(context.filesDir,"uploads/${java.util.UUID.randomUUID()}.$suffix").apply {parentFile!!.mkdirs()}
+        pending=file
+        requireNotNull(context.contentResolver.openInputStream(uri)).use {input ->file.outputStream().use {out ->
+            val buffer=ByteArray(262144)
+            while(true) {currentCoroutineContext().ensureActive();val count=input.read(buffer);if(count<0) break;out.write(buffer,0,count)}
+        }}
+        currentCoroutineContext().ensureActive();file
+    }} catch(e:Exception) {pending?.delete();throw e}
 }
 fun formatDuration(milliseconds: Long): String {
     val seconds = milliseconds.coerceAtLeast(0) / 1000
@@ -49,6 +57,12 @@ fun shareText(context: Context, text: String) { context.startActivity(Intent.cre
 fun shareFile(context: Context, file: File, type: String) {
     val uri=FileProvider.getUriForFile(context, "${context.packageName}.files",file)
     context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType(type).putExtra(Intent.EXTRA_STREAM,uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION),null))
+}
+suspend fun shareLocalFile(context: Context, file: File, type: String) {
+    val shared=withContext(Dispatchers.IO) {
+        File(context.cacheDir,"shared/${java.util.UUID.randomUUID()}.${file.extension}").apply {parentFile!!.mkdirs();file.copyTo(this)}
+    }
+    shareFile(context,shared,type)
 }
 suspend fun sharedDownload(context: Context, api: VoiceStudioApi, path: String, extension: String): File {
     val dir=File(context.cacheDir,"shared").apply {mkdirs()}
@@ -124,6 +138,38 @@ val LocalHostPlayerFactory=staticCompositionLocalOf<(Context,VoiceStudioApi)->Pl
                     modifier=Modifier.weight(1f).semantics {contentDescription=label})
             }
             Text(tr("mobile.android.playback_time",mapOf("position" to formatDuration(position),"duration" to formatDuration(duration))),style=MaterialTheme.typography.bodySmall,color=role("textMuted"))
+        }
+    }
+}
+
+@Composable fun LocalAudioPlayer(file: File, failure: (Throwable)->Unit) {
+    val context=LocalContext.current
+    val player=remember(file) {ExoPlayer.Builder(context).build()}
+    var playing by remember(file) {mutableStateOf(false)}
+    var position by remember(file) {mutableLongStateOf(0)}
+    var duration by remember(file) {mutableLongStateOf(0)}
+    var videoRatio by remember(file) {mutableFloatStateOf(16f/9)}
+    DisposableEffect(player) {
+        val listener=object: Player.Listener {
+            override fun onIsPlayingChanged(isPlaying: Boolean) {playing=isPlaying}
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {failure(ClientFailure("mobile.android.playback_failed"))}
+            override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {if(videoSize.width>0&&videoSize.height>0) videoRatio=videoSize.width*videoSize.pixelWidthHeightRatio/videoSize.height}
+        }
+        player.addListener(listener);player.setMediaItem(MediaItem.fromUri(Uri.fromFile(file)));player.prepare()
+        onDispose {player.removeListener(listener);player.release()}
+    }
+    LaunchedEffect(player) {while(isActive) {position=player.currentPosition.coerceAtLeast(0);duration=player.duration.coerceAtLeast(0);delay(250)}}
+    Group {
+        Column(Modifier.fillMaxWidth().padding(VSTheme.inset)) {
+            if(file.extension=="mp4") Box(Modifier.fillMaxWidth().heightIn(max=(com.voicestudio.mobile.designsystem.VSTokens.SPACING_GAP*25).dp),contentAlignment=Alignment.Center) {
+                androidx.compose.ui.viewinterop.AndroidView(factory={android.view.SurfaceView(it).also(player::setVideoSurfaceView)},modifier=Modifier.aspectRatio(videoRatio,matchHeightConstraintsFirst=true))
+            }
+            IconAction(if(playing) "player.pause" else "player.play",if(playing) VSIcons.Pause else Icons.Default.PlayArrow) {
+                if(playing) player.pause() else {if(player.playbackState==Player.STATE_ENDED) player.seekTo(0);player.play()}
+            }
+            val seek=tr("player.seek")
+            Slider(value=if(duration>0) (position.toFloat()/duration).coerceIn(0f,1f) else 0f,onValueChange={player.seekTo((it*duration).toLong())},enabled=duration>0,modifier=Modifier.semantics {contentDescription=seek})
+            Text(tr("mobile.android.playback_time",mapOf("position" to formatDuration(position),"duration" to formatDuration(duration))))
         }
     }
 }

@@ -1,12 +1,13 @@
 # VoiceStudio on your phone (iOS and Android)
 
-The iOS and Android apps are **companions** for a VoiceStudio you already run:
-the desktop app, a Docker container or a server. Speech, cloning, dubbing and
-dictation run on that computer. The phone sends requests only to the computer
-you pair it with: no accounts, no cloud relay and no analytics.
+The iOS and Android apps run VoiceStudio **on your phone**: speech, voice
+cloning, dictation and dubbing work offline once their models are downloaded,
+with no computer, account or cloud service. If you also run VoiceStudio on a
+computer (desktop app, Docker or a server), you can pair the phone with it and
+choose, per task, to run on **This phone** or **My computer**.
 
 > **Preview.** The apps aren't in the App Store or Google Play yet. Build them
-> from source (below). On-device models are planned for a later release.
+> from source (below).
 
 | | iOS | Android |
 |---|---|---|
@@ -15,18 +16,33 @@ you pair it with: no accounts, no cloud relay and no analytics.
 
 ## What you can do
 
-- **Speak**: type text, pick a voice, engine and language, generate, play,
-  share. Recent generations can be starred or deleted.
-- **Voices**: browse and preview voices; clone one by recording or picking an
-  audio file; rename or delete.
-- **Dub**: pick a video or audio file or paste a link, choose target languages
-  and a voice, and follow the job. Long jobs keep running on the computer;
-  the app picks them up again when reopened.
-- **Dictate**: record and watch the transcript appear live.
-- **Settings**: saved computers, light/dark mode and the same color palettes
-  as the desktop app, language, notifications, privacy and licences.
+- **Speak**: type text, pick a voice and language, generate, play, share.
+- **Voices**: clone a voice from a recording or an audio file. Voices you
+  clone on the phone stay on the phone.
+- **Dub**: pick a video or audio file and target languages; the phone
+  transcribes, translates and re-voices it in the original speaker's voice.
+- **Dictate**: tap the mic and watch the transcript appear live.
+- **Models**: download, update or delete the on-device models.
 
-## Pair the phone
+## On-device models
+
+Open **Models** and download what you need. Nothing downloads until you tap
+it; files come from Hugging Face and are checked before use. Wi-Fi only unless
+you allow mobile data.
+
+| Model | For | Size | Phone memory |
+|---|---|---|---|
+| Kitten (English) / Kokoro (multi-language) | Speak | ~170 MB each | 2–3 GB |
+| Whisper tiny / base | Transcription, dubbing | 100–160 MB | 2–3 GB |
+| Zipformer | Live dictation (English) | 44 MB | 2 GB |
+| OmniVoice | Voice cloning, dubbing | 660 MB | 6 GB |
+| Qwen3 1.7B | Dub translation | 1.1 GB | 6 GB |
+
+Some models ask you to accept their licence first (for example OmniVoice is
+for non-commercial use), the same as on the desktop. Models your phone can't
+run are shown greyed out with the reason.
+
+## Pair a computer (optional)
 
 1. On the computer, open VoiceStudio, click the **Local** pill in the footer
    and choose **Network** ([how sharing works](sharing.md)). On a different network, use

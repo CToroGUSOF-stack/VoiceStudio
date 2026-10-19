@@ -9,7 +9,11 @@
 <key>CFBundleDevelopmentRegion</key><string>en</string>
 <key>LSRequiresIPhoneOS</key><true/>
 <key>UIApplicationSupportsIndirectInputEvents</key><true/>
-<key>UILaunchScreen</key><dict/>
+<key>UILaunchScreen</key><dict>
+<key>UIColorName</key><string>LaunchCanvas</string>
+<key>UIImageName</key><string>LaunchLogo</string>
+<key>UIImageRespectsSafeAreaInsets</key><true/>
+</dict>
 <key>UISupportedInterfaceOrientations</key><array><string>UIInterfaceOrientationPortrait</string><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string></array>
 <key>UIAppFonts</key><array><string>InterVariable.ttf</string></array>
 <key>UIBackgroundModes</key><array><string>processing</string></array>

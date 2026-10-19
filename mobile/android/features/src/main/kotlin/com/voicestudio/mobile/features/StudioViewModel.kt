@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.*
 import java.io.File
 
  data class StudioState(val connectionId: Long = 0, val hostUrl: String? = null, val loading: Boolean = true, val connected: Boolean = false, val busy: Boolean = false, val catalogLoading: Boolean = false,
-    val error: ClientFailure? = null, val profiles: List<Profile> = emptyList(), val engines: EngineFamily = EngineFamily(),
+    val error: ClientFailure? = null, val canRetry: Boolean = false, val profiles: List<Profile> = emptyList(), val engines: EngineFamily = EngineFamily(),
     val history: List<HistoryItem> = emptyList(), val dubHistory: List<DubHistory> = emptyList(), val audio: String? = null)
 
 class StudioViewModel @JvmOverloads constructor(application: Application, val store: SessionStore = SessionStore(application)) : AndroidViewModel(application) {
@@ -22,6 +22,8 @@ class StudioViewModel @JvmOverloads constructor(application: Application, val st
     var api: VoiceStudioApi? = null
         private set
     private var operation: Job? = null
+    private var retryAction: (() ->Unit)? = null
+    val phone = PhoneStudio(application,viewModelScope,::fail) {error,retry -> fail(error,retry)}
     init {
         viewModelScope.launch {
             val prefs = store.preferences.first()
@@ -61,16 +63,19 @@ class StudioViewModel @JvmOverloads constructor(application: Application, val st
             } finally { mutable.update { it.copy(busy = false) } }
         }
     }
-    fun clearError() { mutable.update { it.copy(error = null) } }
-    fun fail(error: Throwable) {
+    fun clearError() { retryAction=null;mutable.update { it.copy(error = null,canRetry=false) } }
+    fun retryError() {val retry=retryAction;clearError();retry?.invoke()}
+    fun fail(error: Throwable) = fail(error,null)
+    fun fail(error: Throwable,retry: (() ->Unit)?) {
         if(error is CancellationException) return
-        mutable.update { it.copy(error = error as? ClientFailure ?: ClientFailure("mobile.android.operation_failed")) }
+        retryAction=retry
+        mutable.update {it.copy(error=error as? ClientFailure ?: ClientFailure("mobile.android.operation_failed"),canRetry=retry!=null)}
     }
     fun run(block: suspend () -> Unit) {
         if(mutable.value.busy) return
         operation = viewModelScope.launch(start = CoroutineStart.LAZY) {
             mutable.update { it.copy(busy = true, error = null) }
-            try { block() } catch(e: CancellationException) { throw e } catch(e: Exception) { fail(e) }
+            try { block() } catch(e: CancellationException) { throw e } catch(e: Exception) { fail(e) {run(block)} }
             finally { if(operation === currentCoroutineContext()[Job]) mutable.update { it.copy(busy = false) } }
         }
         operation?.start()

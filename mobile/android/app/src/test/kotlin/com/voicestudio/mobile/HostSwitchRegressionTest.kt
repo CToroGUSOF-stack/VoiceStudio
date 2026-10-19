@@ -115,6 +115,7 @@ class HostSwitchRegressionTest {
         val player=mock(Player::class.java)
         `when`(player.duration).thenReturn(1000)
         compose.setContent {CompositionLocalProvider(LocalHostPlayerFactory provides {_,_->player}) {StudioApp(vm)}}
+        compose.onNodeWithTag("home.speak").performScrollTo().performClick()
         compose.onNodeWithText("Type what you want to hear…").performTextInput("Text for A")
         compose.onAllNodesWithContentDescription("Play").assertCountEquals(2)
         val oldConnection=vm.state.value.connectionId
@@ -122,6 +123,7 @@ class HostSwitchRegressionTest {
         compose.waitForIdle()
         assertTrue(vm.state.value.connectionId>oldConnection)
         verify(player).release()
+        compose.onNodeWithTag("home.speak").performScrollTo().performClick()
         compose.onNodeWithText("Generated audio").assertDoesNotExist()
         compose.onNodeWithText("Text for A").assertDoesNotExist()
         compose.onAllNodesWithContentDescription("Play").assertCountEquals(1)
@@ -175,7 +177,7 @@ class HostSwitchRegressionTest {
         }
         var shown by androidx.compose.runtime.mutableStateOf(true)
         val l=com.voicestudio.mobile.l10n.L10n.load(app,"en")
-        val copy=l.t("mobile.android.operation_failed")
+        val copy=l.t(com.voicestudio.mobile.features.shortErrorKey("mobile.android.operation_failed"))
         compose.setContent {
             CompositionLocalProvider(com.voicestudio.mobile.features.LocalL10n provides l) {
                 com.voicestudio.mobile.designsystem.VoiceStudioTheme {

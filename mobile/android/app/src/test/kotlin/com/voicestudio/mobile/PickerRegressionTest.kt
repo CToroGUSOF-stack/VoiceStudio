@@ -62,7 +62,7 @@ class PickerRegressionTest {
         compose.onNodeWithText("KittenTTS").assertExists()
         assertEquals("active",value)
     }
-    @Test fun dubPickerSearchSelectCloseAndRemoveChip() {
+    @Test fun dubPickerSearchConfirmAndRemoveChip() {
         val choices=LanguageCatalog.load(context).dubChoices()
         assertFalse(choices.any {it.second=="Auto"})
         content {
@@ -72,7 +72,7 @@ class PickerRegressionTest {
         compose.onNodeWithText("Target languages").performClick()
         compose.onNodeWithText("Search").performTextInput("French")
         compose.onNode(hasText("French") and !hasSetTextAction()).performClick()
-        compose.onNodeWithText("Close").performClick()
+        compose.onNodeWithText("Confirm").performClick()
         compose.onNodeWithContentDescription("Remove French").assertExists().performClick()
         compose.onNodeWithContentDescription("Remove French").assertDoesNotExist()
     }

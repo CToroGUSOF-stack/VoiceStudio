@@ -72,6 +72,10 @@
 }
 
 :root {
+  /* Native iOS content geometry; exported alongside the shared mobile palette. */
+  --ios-card-radius: 1.5rem;
+  --ios-field-radius: 1rem;
+  --ios-home-wordmark-size: 1.75rem;
   --workspace-footer-height: 40px;
   --control-radius: 0.5rem;
   --workspace-gap: 1rem;

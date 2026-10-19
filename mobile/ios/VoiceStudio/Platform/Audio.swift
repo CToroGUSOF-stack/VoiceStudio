@@ -129,20 +129,20 @@ struct AudioPlayerView: View {
             HStack(spacing: VSTokens.spacingGap) {
                 Button(model.t(player.playing ? "common.pause" : "common.play"), systemImage: player.playing ? "pause.fill" : "play.fill") {
                     if player.playing { player.pause() } else { player.play() }
-                }.labelStyle(.iconOnly).buttonStyle(VSButtonStyle(kind: .tertiary)).accessibilityIdentifier("audio.play")
+                }.labelStyle(.iconOnly).studioButton(.tertiary).accessibilityIdentifier("audio.play")
                 Slider(value: Binding(get: { min(player.position, max(1, player.duration)) }, set: { player.seek($0) }), in: 0...max(1, player.duration))
                     .accessibilityLabel(model.t("player.seek"))
                     .accessibilityValue(PlaybackTime.format(player.position))
                 if let file = player.file {
                     ShareLink(item: file) { Label(model.t("mobile.speak.share"), systemImage: "square.and.arrow.up") }
-                        .labelStyle(.iconOnly).buttonStyle(VSButtonStyle(kind: .tertiary))
+                        .labelStyle(.iconOnly).studioButton(.tertiary)
                 }
             }
             HStack {
                 Text(PlaybackTime.format(player.position))
                 Spacer(minLength: 0)
                 Text(PlaybackTime.format(player.duration))
-            }.font(.custom("InterVariable", size: VSTokens.textCaption.size, relativeTo: .caption))
+            }.font(.caption)
                 .monospacedDigit().foregroundStyle(theme.color("textMuted"))
         }
         .onChange(of: player.error) { _, error in if let error { model.error = error; player.error = nil } }
@@ -165,7 +165,7 @@ struct AudioPlayerView: View {
         try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker]); try session.setActive(true)
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("wav")
         let recorder = try AVAudioRecorder(url: url, settings: [AVFormatIDKey: kAudioFormatLinearPCM, AVSampleRateKey: 24000, AVNumberOfChannelsKey: 1, AVLinearPCMBitDepthKey: 16])
-        guard recorder.record() else { throw ClientError("mobile.errors.audio") }
+        guard recorder.record(forDuration: 29) else { throw ClientError("mobile.errors.audio") }
         self.recorder = recorder; file = url; recording = true; seconds = 0
         timer = Task { [weak self] in while !Task.isCancelled { try? await Task.sleep(for: .seconds(1)); guard let self, recording else { return }; seconds += 1 } }
     }
