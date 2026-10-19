@@ -2673,12 +2673,21 @@ def _isolated_faster_whisper():
     return IsolatedFasterWhisperBackend
 
 
+def _whisper_cpp():
+    """Lazy import so whisper_cpp isn't pulled in at registry definition time."""
+    from engines.whisper_cpp import WhisperCppBackend
+    return WhisperCppBackend
+
+
 class _LazyASRRegistry(dict):
     """Registry with one lazily-resolved entry (Wave 4.2). Mirrors the TTS
     registry's lazy pattern so listing/selecting the crash-isolated ASR
     backend doesn't import the subprocess stack unless it's used."""
 
-    _LAZY = {"faster-whisper-isolated": _isolated_faster_whisper}
+    _LAZY = {
+        "faster-whisper-isolated": _isolated_faster_whisper,
+        "whisper-cpp": _whisper_cpp,
+    }
 
     def __contains__(self, key):
         return dict.__contains__(self, key) or key in self._LAZY
@@ -2734,6 +2743,7 @@ _INSTALL_HINTS: dict[str, str] = {
     "faster-whisper":  "pip install faster-whisper  (CTranslate2; cross-platform, CUDA or CPU)",
     "mlx-whisper":     "pip install mlx-whisper  (Apple Silicon only)",
     "pytorch-whisper": "Bundled with transformers — no extra install (CUDA/MPS/CPU)",
+    "whisper-cpp":     "Place whisper-cli or whisper-server in backend/engines/whisper_cpp/bin/ (Vulkan/CUDA/CPU)",
     "nemo-parakeet":   (
         "No safe install path in this app yet — nemo_toolkit's ASR extras pin "
         "transformers>=4.57,<4.58, which conflicts with VoiceStudio's own "
@@ -2974,6 +2984,23 @@ def _ctranslate2_cuda_ok() -> bool:
     )
 
 
+def _vulkan_preferred() -> bool:
+    """True when the host has a Vulkan-capable GPU but no usable CUDA device.
+
+    On such hosts, whisperx/faster-whisper run on the CPU (no HIP/Vulkan in CTranslate2),
+    while whisper-cpp can use the GPU through its Vulkan backend.
+    """
+    if _cuda_reported_available() and not _rocm_torch():
+        return False
+    try:
+        from core.device_caps import detect_host_caps, VULKAN_MARKER
+
+        caps = detect_host_caps()
+        return any(VULKAN_MARKER in note for note in caps.notes)
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def _auto_detect() -> str:
     """Pick the best available ASR engine **for this hardware**.
 
@@ -3013,6 +3040,14 @@ def _auto_detect() -> str:
     # so it genuinely uses the HIP GPU there.
     if _rocm_torch() and _cuda_reported_available() and _probe_available(PyTorchWhisperBackend):
         return "pytorch-whisper"
+    # Vulkan-native ASR for AMD GPUs without CUDA (Phase 3)
+    if _vulkan_preferred():
+        try:
+            whisper_cpp_cls = _REGISTRY["whisper-cpp"]
+            if _probe_available(whisper_cpp_cls):
+                return "whisper-cpp"
+        except Exception:  # noqa: BLE001
+            pass
     if _probe_available(WhisperXBackend):
         return "whisperx"
     if _probe_available(FasterWhisperBackend):
@@ -3983,6 +4018,9 @@ def _offline_asr_repo(backend_id: str | None = None) -> str | None:
             return None
     if bid == "pytorch-whisper":
         return os.environ.get("OMNIVOICE_PYTORCH_ASR_MODEL", _PYTORCH_ASR_DEFAULT)
+    if bid == "whisper-cpp":
+        from engines.whisper_cpp.bootstrap import HF_MODEL_REPO, MODEL_ENV
+        return os.environ.get(MODEL_ENV) or HF_MODEL_REPO
     return None
 
 

@@ -57,6 +57,11 @@ DIRECTML_MARKER = "DirectML device present"
 # their machine simply has no GPU.
 UNUSABLE_GPU_MARKER = "present but PyTorch cannot use it"
 
+# Stamped onto the note for a host where a Vulkan-capable GPU is detected.
+# Vulkan is not a torch device family; engines that ship their own Vulkan
+# runtime (audiocpp, omnivoice-gguf, whisper-cpp) use the GPU independently of PyTorch.
+VULKAN_MARKER = "Vulkan runtime present"
+
 # NOTE: the NVIDIA driver-version check (CUDA 12.x minor-compat floor: R525.60.13 Linux / R528.33 Windows)
 # is intentionally NOT done here — it requires shelling to ``nvidia-smi``, which
 # would put a subprocess on the cold-start probe path. That check stays in
@@ -651,6 +656,29 @@ def _probe() -> HostCaps:
     except Exception:
         # torch_directml absent (the common case) — no DirectML on this host.
         pass
+
+    # ── Vulkan runtime — cross-vendor GPU, NOT a torch device family ──
+    # Engines with their own Vulkan runtime (audiocpp, omnivoice-gguf, whisper-cpp) can
+    # accelerate on any GPU the Vulkan loader sees, independently of torch.
+    # The probe checks for the loader library only — no subprocess, no init.
+    # Deliberately skipped when torch already has an accelerated device, or
+    # when GPU inventory is disabled (e.g. hermetic test suite runs).
+    if not detected and os.environ.get("OMNIVOICE_DISABLE_GPU_INVENTORY", "").strip() not in ("1", "true"):
+        try:
+            import ctypes
+            if sys.platform == "win32":
+                _vk_lib = "vulkan-1"
+            elif sys.platform == "darwin":
+                _vk_lib = "libvulkan.1.dylib"
+            else:
+                _vk_lib = "libvulkan.so.1"
+            ctypes.cdll.LoadLibrary(_vk_lib)
+            notes.append(
+                f"{VULKAN_MARKER}; Vulkan-native engines can use the GPU"
+            )
+        except Exception:  # noqa: BLE001
+            # Vulkan loader absent — no Vulkan GPU acceleration available.
+            pass
 
     # Hardware the OS can see but this torch build cannot drive. Only when
     # nothing accelerated was detected: with a working GPU, an extra unused
