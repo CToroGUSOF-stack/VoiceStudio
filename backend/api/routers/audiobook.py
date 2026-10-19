@@ -940,7 +940,7 @@ async def _run_chapter(chapter, *, default_voice, language, opts, voice_map,
         lease=lease,
     )
     if reserve_cache is not None:
-        reserve_cache(sr, engine_id, resolve)
+        await asyncio.to_thread(reserve_cache, sr, engine_id, resolve)
     try:
         timeout_engine = get_backend_class(engine_id)
     except ValueError:

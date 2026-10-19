@@ -16,6 +16,7 @@ import json
 import os
 import shutil
 import subprocess
+import threading
 from pathlib import Path
 
 import pytest
@@ -344,6 +345,65 @@ def test_closing_before_preparation_keeps_existing_progress_without_leaking_pins
     assert all(path.exists() for path in existing)
     prune_cache_dir(str(cache), max_bytes=0)
     assert not list(cache.rglob("*.wav"))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("cancel", [False, True])
+async def test_cache_reservation_keeps_event_loop_responsive(tmp_path, monkeypatch, cancel):
+    from api.routers import audiobook
+    from services.longform_render import LONGFORM_CACHE_SUBDIR, prune_cache_dir
+
+    monkeypatch.setattr(audiobook, "_build_synth", _stub_build_synth())
+    monkeypatch.setattr("core.config.OUTPUTS_DIR", str(tmp_path))
+    loop = asyncio.get_running_loop()
+    started = asyncio.Event()
+    release = threading.Event()
+    finished = threading.Event()
+    responsive = []
+    original_inputs = audiobook._chapter_cache_inputs
+
+    def slow_inputs(*args, **kwargs):
+        if responsive:
+            return original_inputs(*args, **kwargs)
+        loop.call_soon_threadsafe(started.set)
+        responsive.append(release.wait(5))
+        try:
+            return original_inputs(*args, **kwargs)
+        finally:
+            finished.set()
+
+    monkeypatch.setattr(audiobook, "_chapter_cache_inputs", slow_inputs)
+
+    async def render():
+        return [frame async for frame in audiobook._render_longform_sse(
+            _plan(("One", "First.")), default_voice=None,
+        )]
+
+    task = asyncio.create_task(render())
+    try:
+        await asyncio.wait_for(started.wait(), timeout=15)
+        if cancel:
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+        release.set()
+        assert await asyncio.to_thread(finished.wait, 10)
+        if not cancel:
+            frames = await asyncio.wait_for(task, timeout=120)
+            assert '"type": "done"' in frames[-1]
+        assert responsive == [True], "cache reservation blocked the event loop"
+    finally:
+        release.set()
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+        await asyncio.to_thread(finished.wait, 10)
+
+    # A worker finishing after cancellation must not reacquire released pins.
+    cache = tmp_path / LONGFORM_CACHE_SUBDIR
+    prune_cache_dir(str(cache), max_bytes=0)
+    assert not list(cache.rglob("*.wav"))
+    from services import longform_render
+    assert not longform_render._cache_pins
 
 
 def test_failed_mux_keeps_checkpoint_and_reports_failure(tmp_path, monkeypatch):

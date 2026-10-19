@@ -22,7 +22,7 @@ metadata and the backend fallback mirror it.
 
 ### Fixed
 
-- Audiobook and Stories renders retain cached chapters and segments during overlapping resumes, and remove incomplete outputs while keeping recovery checkpoints when assembly fails or is cancelled (#3017) — thanks @Bortlesboat!
+- Audiobook and Stories renders retain cached chapters and segments during overlapping resumes, keep requests responsive during cache preparation, and remove incomplete outputs while keeping recovery checkpoints when assembly fails or is cancelled (#3017) — thanks @Bortlesboat!
 
 ### CI
 

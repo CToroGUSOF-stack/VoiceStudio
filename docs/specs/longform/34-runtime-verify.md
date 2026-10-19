@@ -1094,7 +1094,9 @@ built from `_BASE_SCHEMA` (so the job-library cases run against the existing sch
      Overlap another render's exit with a multi-chapter resume at `started`, engine
      preparation, and after its first chapter: later chapter WAVs and reusable
      segments still hit. Unrelated audio is evictable after plan reservation,
-     and closing the stream releases every pin. Failed or cancelled muxes remove
+     and closing the stream releases every pin. Plan reservation runs in a worker
+     so other requests remain responsive; cancellation releases pins even when
+     that worker finishes later. Failed or cancelled muxes remove
      partial MP3/M4B files while retaining the cached audio and resume manifest.
 
 **Partial / total failure (S2):**
