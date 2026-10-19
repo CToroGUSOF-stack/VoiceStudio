@@ -267,7 +267,7 @@ def _rocm_index_url() -> Optional[str]:
     warning on other platforms — a sidecar install must not hard-fail where
     the main venv quietly keeps its default torch.
     """
-    if sys.platform != "linux":
+    if sys.platform not in ("linux", "win32"):
         return None
     variant = os.environ.get("OMNIVOICE_TORCH_VARIANT", "").strip().lower()
     if _host_family() == "rocm" or variant == "rocm":
@@ -316,6 +316,10 @@ def venv_torch_hip(venv_dir: Path) -> Optional[bool]:
     Reads the wheel's generated ``version.py`` instead of importing torch, so it
     is safe on every engine-list refresh."""
     matches = sorted((venv_dir / "lib").glob("python*/site-packages/torch/version.py"))
+    if not matches:
+        win_version = venv_dir / "Lib" / "site-packages" / "torch" / "version.py"
+        if win_version.is_file():
+            matches = [win_version]
     if not matches:
         return None
     try:

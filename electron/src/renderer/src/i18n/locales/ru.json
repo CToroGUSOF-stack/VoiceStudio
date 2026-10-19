@@ -1406,6 +1406,7 @@
     "gpu_report_state_unknown": "Не удалось определить состояние GPU.",
     "gpu_report_option_vulkan_engines": "Используйте движок со своей средой выполнения для GPU: audio.cpp работает на GPU AMD Radeon через Vulkan (Настройки → Модели → установить среду выполнения).",
     "gpu_report_option_rocm_windows_manual": "VoiceStudio не устанавливает PyTorch с ROCm в Windows. AMD публикует отдельные wheel-пакеты для современных карт Radeon, но им нужен более новый PyTorch, чем тот, с которым тестировались здешние движки, и часть движков перестаёт работать. Пробуйте, только если умеете устранять неполадки (см. руководство по установке для Windows).",
+    "gpu_report_option_rocm_windows_opt_in": "Задайте OMNIVOICE_TORCH_VARIANT=rocm и снова запустите настройку, чтобы установить сборку PyTorch с ROCm для Windows (требуются AMD HIP SDK и графический процессор RDNA 3/3.5).",
     "gpu_report_option_rocm_variant_linux": "Задайте OMNIVOICE_TORCH_VARIANT=rocm и снова запустите настройку, чтобы установить сборку PyTorch с ROCm.",
     "gpu_report_option_rocm_device_access": "Убедитесь, что драйвер amdgpu загружен и ваш пользователь может открыть /dev/kfd (группы render и video).",
     "gpu_report_option_reinstall_cuda_torch": "Переустановите среду выполнения, чтобы она установила сборку PyTorch с CUDA.",

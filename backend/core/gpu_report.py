@@ -41,8 +41,8 @@ UNUSABLE_GPU_STATES = frozenset({
 _OPTIONS: dict[str, tuple[str, ...]] = {
     # Windows: only these two exist. DirectML is not offered: torch-directml
     # needs torch 2.4.x, which the engines here no longer support.
-    "amd_cuda_build:win32": ("vulkan_engines", "rocm_windows_manual"),
-    "amd_cpu_build:win32": ("vulkan_engines", "rocm_windows_manual"),
+    "amd_cuda_build:win32": ("vulkan_engines", "rocm_windows_opt_in", "rocm_windows_manual"),
+    "amd_cpu_build:win32": ("vulkan_engines", "rocm_windows_opt_in", "rocm_windows_manual"),
     "amd_rocm_no_device:win32": ("rocm_windows_manual",),
     "amd_cuda_build:linux": ("rocm_variant_linux", "vulkan_engines"),
     "amd_cpu_build:linux": ("rocm_variant_linux", "vulkan_engines"),

@@ -322,6 +322,19 @@ def why_no_gpu(torch, gpus=None) -> tuple[str, ...]:
                     "--group-add with THAT host's render/video GIDs, which "
                     "differ between machines)",
                 )
+        if sys.platform == "win32":
+            import shutil
+            hip_path = os.environ.get("HIP_PATH", "").strip()
+            hip_dll_in_path = shutil.which("amdhip64.dll")
+            hip_dll_in_sdk = (
+                bool(hip_path) and os.path.exists(os.path.join(hip_path, "bin", "amdhip64.dll"))
+            )
+            if not hip_dll_in_path and not hip_dll_in_sdk:
+                return (
+                    f"ROCm {hip} is installed but amdhip64.dll was not found on PATH "
+                    "or in %HIP_PATH%\\bin — install AMD HIP SDK for Windows (v6.1+) "
+                    "and ensure its bin directory is added to PATH",
+                )
         override = (os.environ.get("HSA_OVERRIDE_GFX_VERSION") or "").strip()
         if override:
             # Checked BEFORE blaming the ROCm version, because it is the more
@@ -341,6 +354,11 @@ def why_no_gpu(torch, gpus=None) -> tuple[str, ...]:
                 "it already supports can leave the runtime with no usable "
                 "device. VoiceStudio sets the override itself when a card "
                 "genuinely needs it",
+            )
+        if sys.platform == "win32":
+            return (
+                f"ROCm {hip} is installed on Windows but no GPU was enumerated — "
+                "verify AMD HIP SDK and driver compatibility, or check `hipInfo` on the host",
             )
         return (
             f"ROCm {hip} is installed and the device nodes are reachable, but "

@@ -77,3 +77,15 @@ def test_dev_backend_skips_resync_when_rocm_requested():
     assert observed["unset"] == [base[0], "--no-sync", *base[1:]]
     assert observed["auto"] == [base[0], "--no-sync", *base[1:]]
     assert observed["rocm"] == [base[0], "--no-sync", *base[1:]]
+
+
+def test_setup_runs_rocm_check_on_windows(monkeypatch):
+    setup = _load_setup()
+    called = []
+    monkeypatch.setattr("sys.platform", "win32")
+    monkeypatch.setattr(setup, "_ensure_vcredist_windows", lambda: None)
+    monkeypatch.setattr(setup, "_ensure_rocm_torch", lambda: called.append(True))
+    monkeypatch.setattr(setup, "_find_compat_dir", lambda: None)
+    setup.main()
+    assert called == [True]
+

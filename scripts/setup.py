@@ -208,8 +208,8 @@ def main():
     if sys.platform == "darwin":
         return
 
-    # ── Step 2: opt-in AMD ROCm torch (Linux) ─────────────────────────────
-    if sys.platform.startswith("linux"):
+    # ── Step 2: opt-in AMD ROCm torch (Linux and Windows) ─────────────────
+    if sys.platform.startswith("linux") or sys.platform == "win32":
         _ensure_rocm_torch()
 
     compat_dir = _find_compat_dir()

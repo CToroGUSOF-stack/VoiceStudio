@@ -315,10 +315,10 @@ describe('packaged runtime setup', () => {
     expect(ROCM_TORCH_INDEX).toContain('/rocm');
   });
   it('ignores the ROCm opt-in where PyTorch publishes no ROCm wheels', async () => {
-    forcePlatform('win32');
+    forcePlatform('darwin');
     const { bundle, project } = await fixture();
     vi.stubEnv('OMNIVOICE_TORCH_VARIANT', 'rocm');
-    expect(rocmTorchOptIn('win32')).toBe(false);
+    expect(rocmTorchOptIn('win32')).toBe(true);
     expect(rocmTorchOptIn('darwin')).toBe(false);
     expect(rocmTorchOptIn('linux')).toBe(true);
     const run = vi.fn(
