@@ -333,14 +333,22 @@ def why_no_gpu(torch, gpus=None) -> tuple[str, ...]:
             # #1274 reporter saw. Their card (gfx1151) is natively supported
             # by the ROCm this image ships, so the override they set is very
             # likely what hid it.
+            location = " on Windows" if sys.platform == "win32" else " and the device nodes are reachable"
             return (
-                f"ROCm {hip} is installed and the device nodes are reachable, "
+                f"ROCm {hip} is installed{location}, "
                 f"but no GPU was enumerated while HSA_OVERRIDE_GFX_VERSION="
                 f"{override} is set. Try removing that override first — this "
                 "ROCm supports most current cards natively, and remapping one "
                 "it already supports can leave the runtime with no usable "
                 "device. VoiceStudio sets the override itself when a card "
                 "genuinely needs it",
+            )
+        if sys.platform == "win32":
+            return (
+                f"ROCm {hip} is installed on Windows but no GPU was enumerated — "
+                "verify that the installed Windows wheels, AMD driver and supported GPU "
+                "match AMD's compatibility matrix. A HIP SDK on PATH alone does not "
+                "prove PyTorch can use this card",
             )
         return (
             f"ROCm {hip} is installed and the device nodes are reachable, but "

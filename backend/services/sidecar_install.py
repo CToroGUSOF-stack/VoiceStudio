@@ -317,6 +317,10 @@ def venv_torch_hip(venv_dir: Path) -> Optional[bool]:
     is safe on every engine-list refresh."""
     matches = sorted((venv_dir / "lib").glob("python*/site-packages/torch/version.py"))
     if not matches:
+        win_version = venv_dir / "Lib" / "site-packages" / "torch" / "version.py"
+        if win_version.is_file():
+            matches = [win_version]
+    if not matches:
         return None
     try:
         text = matches[0].read_text(encoding="utf-8", errors="replace")

@@ -1569,8 +1569,8 @@ def test_rocm_host_offers_the_repair_when_the_venv_still_has_cuda_torch(monkeypa
     and start_install short-circuited with already_installed — the user
     updates the app and the sidecar still runs on CPU while routing reports
     acceleration."""
-    spec = _mk_complete_indextts2_install(monkeypatch, _CUDA_TORCH_VERSION_PY)
     monkeypatch.setattr(si.sys, "platform", "linux")
+    spec = _mk_complete_indextts2_install(monkeypatch, _CUDA_TORCH_VERSION_PY)
     monkeypatch.setattr(si, "_host_family", lambda: "rocm")
     assert si._rocm_index_url() is not None  # the gate's condition is live
     assert si._healthy(spec) is False        # fail-before: True (marker-less)
@@ -1579,8 +1579,8 @@ def test_rocm_host_offers_the_repair_when_the_venv_still_has_cuda_torch(monkeypa
 def test_rocm_host_keeps_a_rocm_torch_install_healthy(monkeypatch):
     """The repair offer must not loop: once the deps step has swapped in the
     ROCm build, the same install reads healthy again."""
-    spec = _mk_complete_indextts2_install(monkeypatch, _ROCM_TORCH_VERSION_PY)
     monkeypatch.setattr(si.sys, "platform", "linux")
+    spec = _mk_complete_indextts2_install(monkeypatch, _ROCM_TORCH_VERSION_PY)
     monkeypatch.setattr(si, "_host_family", lambda: "rocm")
     assert si._healthy(spec) is True
 
@@ -1588,8 +1588,8 @@ def test_rocm_host_keeps_a_rocm_torch_install_healthy(monkeypatch):
 def test_non_rocm_hosts_keep_installed_means_installed(monkeypatch):
     """The gate changes nothing where the recipe did not change: CUDA and
     CPU hosts (and the rocm opt-in turned off) keep the old verdict."""
-    spec = _mk_complete_indextts2_install(monkeypatch, _CUDA_TORCH_VERSION_PY)
     monkeypatch.setattr(si.sys, "platform", "linux")
+    spec = _mk_complete_indextts2_install(monkeypatch, _CUDA_TORCH_VERSION_PY)
     for family in ("cuda", "cpu"):
         monkeypatch.setattr(si, "_host_family", lambda f=family: f)
         assert si._healthy(spec) is True

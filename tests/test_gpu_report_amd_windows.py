@@ -389,11 +389,18 @@ def test_report_reasons_are_scrubbed(monkeypatch):
 
 
 def _fake_venv(tmp_path, version_py: str):
-    site = tmp_path / ".venv" / "lib" / "python3.11" / "site-packages" / "torch"
+    import sys
+
+    if sys.platform == "win32":
+        site = tmp_path / ".venv" / "Lib" / "site-packages" / "torch"
+        python = tmp_path / ".venv" / "Scripts" / "python.exe"
+    else:
+        site = tmp_path / ".venv" / "lib" / "python3.11" / "site-packages" / "torch"
+        python = tmp_path / ".venv" / "bin" / "python"
     site.mkdir(parents=True, exist_ok=True)
     (site / "version.py").write_text(version_py)
-    (tmp_path / ".venv" / "bin").mkdir(parents=True, exist_ok=True)
-    (tmp_path / ".venv" / "bin" / "python").write_text("")
+    python.parent.mkdir(parents=True, exist_ok=True)
+    python.write_text("")
 
 
 def test_indextts_does_not_claim_rocm_when_its_venv_holds_a_cuda_torch(tmp_path, monkeypatch):
@@ -447,6 +454,9 @@ def test_linux_intel_arc_is_found_without_a_vram_figure(tmp_path, symlink_or_ski
     """i915/xe expose no mem_info_vram_total, so Arc used to read 0 GB and be
     dropped as noise. A card behind a bridge is discrete; the iGPU at 00:02.0
     is not."""
+    import sys
+    if sys.platform == "win32":
+        pytest.skip("Linux sysfs PCI paths contain colons, not valid on Windows")
     inv = _m("core.gpu_inventory")
     pci = tmp_path / "pci"
     for name in ("0000:00:02.0", "0000:03:00.0"):
