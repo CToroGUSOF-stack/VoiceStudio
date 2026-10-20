@@ -22,6 +22,9 @@
     "preset32": "Origineel",
     "sizeUnknown": "De grootte wordt na het genereren getoond."
   },
+  "presetVoice": {
+    "label": "Voorgeprogrammeerde stem"
+  },
   "audioQuality": {
     "check": "Audio controleren",
     "failed": "Audioanalyse niet beschikbaar.",
@@ -352,7 +355,9 @@
   },
   "referenceAsr": {
     "busy": "Transcriberen…",
-    "retry": "Probeer de transcriptie opnieuw"
+    "retry": "Probeer de transcriptie opnieuw",
+    "install": "Installeer {{label}} ({{size}} GB) om automatisch te transcriberen",
+    "installing": "{{label}} wordt gedownload. De transcriptie start opnieuw zodra dit klaar is."
   },
   "engineSidebar": {
     "tts": "TTS",
@@ -762,6 +767,9 @@
     "burn_subs_title": "Geef ondertitels rechtstreeks weer in de MP4-videostream (hardsubs). Gebruikt het formaat met dubbele ondertiteling wanneer dubbele ondertiteling is ingeschakeld.",
     "timing_smart_fit": "Slimme aanpassing",
     "timing_smart_fit_title": "Verdeelt de aanpassing: versnelt de audio licht (toonhoogte behouden, tot 1,5×) en vertraagt dat videosegment licht (tot 2×) zodat spraak op natuurlijk tempo past. Wat daarbuiten valt wordt afgekapt en gemarkeerd. Exporteren hercodeert de video.",
+    "fit_speed_hint": "Snelheidslimieten van Slim passend maken. Strakkere limieten houden spraak natuurlijk; ruimere limieten laten meer regels passen zonder afkappen. De standaardwaarden werken voor de meeste video's.",
+    "fit_max_speed": "Hoogste snelheid",
+    "fit_min_speed": "Laagste snelheid",
     "voice_match": "Stemovereenkomst:",
     "voice_match_title": "Stemovereenkomst — of elke gedubde regel wordt gekloond uit zijn eigen bronclip of alle regels van een spreker één referentie delen.",
     "voice_match_per_line": "Per regel",
@@ -2043,6 +2051,7 @@
     "setup_hint": "Download Python en app-afhankelijkheden (meerdere GB). Spraakmodellen worden afzonderlijk geïnstalleerd wanneer je ze kiest.",
     "installing": "Afhankelijkheden…",
     "setup_space": "Maak minstens {{gib}} GiB vrij op de schijf van de app en probeer het opnieuw.",
+    "repair_failed": "Het automatisch herstellen van de Python-omgeving is niet voltooid. Bekijk het enginelogboek en kies Opnieuw proberen.",
     "setup_access": "Sta schrijftoegang toe tot de gegevensmap van de app en probeer het opnieuw.",
     "setup_unsupported_platform": "Deze Intel-Mac kan de lokale AI-backend niet uitvoeren — PyTorch levert geen macOS-Intel-wheels. Verbind hieronder een externe backend; geen lokale installatie nodig.",
     "setup_wrong_architecture": "Dit is de Intel-versie (x64) van VoiceStudio die via Rosetta op een Mac met Apple Silicon draait, dus de lokale AI-backend kan niet worden geïnstalleerd. Sluit de app, installeer de Apple Silicon-DMG (arm64) eroverheen en open hem opnieuw — je stemmen en projecten blijven behouden.",
@@ -2174,7 +2183,13 @@
     "consent_revoke": "Intrekken",
     "consent_revoke_confirm": "Verificatie van stemeigendom intrekken? De toestemmingsopname wordt verwijderd en agentfuncties kunnen deze stem niet langer gebruiken.",
     "consent_revoked": "Verificatie ingetrokken",
-    "test_text": "Hallo – dit is een test van deze stem."
+    "test_text": "Hallo – dit is een test van deze stem.",
+    "attest_explain": "Cloudsynchronisatie deelt een stem pas nadat je bevestigt dat je hem mag gebruiken.",
+    "attest_own_voice": "Dit is mijn stem",
+    "attest_permission": "Ik heb toestemming van de spreker",
+    "attested_own_voice": "Bevestigd: dit is mijn stem",
+    "attested_permission": "Bevestigd: ik heb toestemming van de spreker",
+    "attest_clear": "Bevestiging verwijderen"
   },
   "nav": {
     "home": "Start",
@@ -2278,6 +2293,68 @@
     "no": "Nee, bedankt",
     "dismiss": "Sluiten (analytics blijft uit)"
   },
+  "account": {
+    "title": "VoiceStudio-account",
+    "setup_body": "Optioneel. Meld je aan bij een gratis VoiceStudio-account om instellingen tussen je apparaten te synchroniseren. Alles werkt ook zonder, en er wordt niets verzonden tenzij je dit inschakelt. Je kunt dit altijd wijzigen via Instellingen → Account.",
+    "use_yes": "Accountfuncties inschakelen",
+    "use_no": "Alles lokaal houden",
+    "features": "Accountfuncties",
+    "features_desc": "Uit betekent dat de app nooit contact opneemt met VoiceStudio Cloud.",
+    "sync": "Cloudsynchronisatie",
+    "sync_desc": "Uitzetten stopt meteen alle synchronisatie. Er wordt niets van dit apparaat verwijderd.",
+    "sign_in": "Aanmelden",
+    "continue_in_browser": "Ga verder in je browser…",
+    "cancel": "Annuleren",
+    "sign_out": "Afmelden",
+    "signed_in_as": "Aangemeld als {{name}}",
+    "signed_out_expired": "Je bent afgemeld. Meld je aan om te blijven synchroniseren.",
+    "sign_in_failed": "Aanmelden is geannuleerd of mislukt",
+    "offline": "Offline: wijzigingen worden later gesynchroniseerd",
+    "not_remembered": "De sleutelhanger van je systeem is niet beschikbaar, dus je moet je opnieuw aanmelden nadat VoiceStudio opnieuw is gestart.",
+    "menu_settings": "Accountinstellingen",
+    "plan": "Abonnement",
+    "storage": "Cloudopslag",
+    "storage_used": "{{used}} van {{limit}} gebruikt",
+    "features_title": "Je abonnement bevat",
+    "feature_settings_sync": "Instellingen synchroniseren tussen apparaten",
+    "feature_pro": "VoiceStudio Pro-functies",
+    "included": "Inbegrepen",
+    "not_included": "Niet in je abonnement",
+    "plan_ends": "tot {{date}}",
+    "details_failed": "Je accountgegevens konden niet worden geladen ({{reason}}).",
+    "retry": "Opnieuw proberen"
+  },
+  "cloudsync": {
+    "unavailable": "Synchronisatie is nu niet beschikbaar.",
+    "choose": "Kies wat je synchroniseert",
+    "settings": "Instellingen",
+    "shortcuts": "Sneltoetsen",
+    "favorites": "Galerijfavorieten",
+    "turn_on": "Synchronisatie inschakelen",
+    "device_revoked": "Dit apparaat is uit de synchronisatie verwijderd.",
+    "set_up_again": "Opnieuw instellen",
+    "account_suspended": "Je account is opgeschort. Lokale functies blijven werken.",
+    "storage_full": "De cloudopslag is vol ({{used}} / {{limit}}). Wijzigingen blijven op dit apparaat tot er ruimte is.",
+    "mass_delete": "{{count}} items uit de cloud verwijderen?",
+    "confirm_remove": "Verwijderen",
+    "conflict": "Gewijzigd op een ander apparaat: {{keys}}",
+    "paused": "Gepauzeerd door VoiceStudio",
+    "needs_update": "Werk VoiceStudio bij om {{area}} te synchroniseren.",
+    "size": "{{size}} in de cloud",
+    "turned_off_prompt": "{{area}} niet meer synchroniseren op dit apparaat?",
+    "keep_in_cloud": "In de cloud houden",
+    "remove_from_cloud": "Ook uit de cloud verwijderen ({{count}} items, {{size}})",
+    "voices": "Stemmen",
+    "takes": "Takes",
+    "projects": "Projecten",
+    "dub_projects": "Nasynchronisatieprojecten",
+    "dictation_history": "Dicteergeschiedenis",
+    "pro": "Pro",
+    "use_choices_of": "Dezelfde keuzes gebruiken als {{device}}",
+    "devices": "Apparaten",
+    "this_device": "Dit apparaat",
+    "remove_device": "Verwijderen"
+  },
   "firstrun": {
     "stage_models": "Modellen & engines",
     "chip_required": "vereist",
@@ -2287,6 +2364,10 @@
     "lib_show_all": "Toon {{count}} optionele modellen",
     "env_dir": "App-omgeving",
     "env_dir_desc": "Python-runtime en AI-bibliotheken.",
+    "env_dir_desc_scoped": "Python-runtime, AI-bibliotheken, modellen, je gegevens en tijdelijke bestanden.",
+    "storage_data": "Gegevens",
+    "storage_models": "Modellen",
+    "storage_temp": "Tijdelijke bestanden",
     "change": "Wijzigen…",
     "reset_default": "Resetten naar standaard",
     "region_label": "Downloadregio"
@@ -2818,7 +2899,13 @@
     "audio_io_failed": "De audio kon niet worden gelezen of opgeslagen. Controleer het bestandsformaat, de vrije schijfruimte en de bestandsrechten. Controleer de map bij Instellingen → Opslag.",
     "no_audio_track": "Dit bestand heeft geen audiotrack, dus er is geen spraak om te transcriberen, na te synchroniseren of te klonen. Kies een video- of audiobestand met geluid.",
     "transcription_media_tool": "Voor transcriptie is ffmpeg nodig, dat VoiceStudio niet kon vinden of uitvoeren. Open Instellingen → Audiotools en gebruik Downloaden/Herstellen, of installeer ffmpeg (macOS: brew install ffmpeg; Windows: winget install Gyan.FFmpeg; Linux: je pakketbeheerder) en herstart VoiceStudio. Je kunt ook FFMPEG_PATH naar een ffmpeg-bestand laten wijzen.",
-    "transcription_pipe_lost": "De backend verloor tijdens de transcriptie zijn uitvoerkanaal naar de app (broken pipe). Herstart VoiceStudio en probeer het opnieuw."
+    "transcription_pipe_lost": "De backend verloor tijdens de transcriptie zijn uitvoerkanaal naar de app (broken pipe). Herstart VoiceStudio en probeer het opnieuw.",
+    "gpu_oom": "De GPU heeft geen geheugen meer. Sluit andere GPU-intensieve apps of ontlaad modellen en probeer het opnieuw. Je kunt ook CPU kiezen in Instellingen → Prestaties en apparaat of een kleinere TTS-engine selecteren.",
+    "host_memory_exhausted": "De computer heeft geen geheugen meer. Sluit andere geheugenintensieve apps en browsertabs, ontlaad ongebruikte modellen, genereer een kortere passage of kies een lichtere TTS-engine.",
+    "engine_dependency_missing": "Een Python-pakket dat deze engine nodig heeft is niet geïnstalleerd, dus de engine kon niet starten. Open de Modelcatalogus, selecteer de engine en gebruik Installeren / Repareren en start VoiceStudio daarna opnieuw.",
+    "reference_stt_missing": "Deze stem heeft geen transcriptie en er is geen spraak-naar-tekstmodel geïnstalleerd om er een te maken. Typ wat de referentieclip zegt in het transcriptievak (clips tot 20 seconden) of installeer een spraak-naar-tekstmodel in de Modelcatalogus, selecteer het en genereer opnieuw.",
+    "proxy_gateway_error": "Een proxy of gateway tussen jou en VoiceStudio antwoordde met HTTP {{status}} in plaats van de backend. De backend is mogelijk nog bezig. Verhoog de lees-timeout van de proxy (bij nginx proxy_read_timeout) voor lange generaties en controleer daarna Instellingen → Logboeken → Backend.",
+    "route_not_found": "De draaiende VoiceStudio-backend heeft geen {{route}}-endpoint. Start VoiceStudio opnieuw zodat app en backend overeenkomen; blijft het probleem, werk dan beide bij naar dezelfde versie."
   },
   "network": {
     "copied": "Gekopieerd",

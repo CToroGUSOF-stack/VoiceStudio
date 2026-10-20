@@ -8,6 +8,7 @@ import type {
   UpdateReleaseInfo,
   VoiceStudioBridge,
   RepairAgentEvent,
+  AccountPublicState,
 } from './index.d';
 
 function subscribe<T>(channel: string, cb: (payload: T) => void): () => void {
@@ -79,6 +80,17 @@ const bridge: VoiceStudioBridge = {
       ipcRenderer.on('app:flush-persistence', listener);
       return () => ipcRenderer.removeListener('app:flush-persistence', listener);
     },
+  },
+  account: {
+    get: () => ipcRenderer.invoke('account:get') as Promise<AccountPublicState>,
+    signIn: () => ipcRenderer.invoke('account:sign-in') as Promise<void>,
+    cancelSignIn: () => ipcRenderer.invoke('account:cancel-sign-in') as Promise<void>,
+    signOut: () => ipcRenderer.invoke('account:sign-out') as Promise<void>,
+    setSwitches: (patch) =>
+      ipcRenderer.invoke('account:set-switches', patch) as Promise<AccountPublicState>,
+    updateProfile: (patch) =>
+      ipcRenderer.invoke('account:update-profile', patch) as Promise<AccountPublicState>,
+    onState: (cb) => subscribe<AccountPublicState>('account:state', cb),
   },
   backend: {
     getStatus: () => ipcRenderer.invoke('backend:getStatus') as Promise<BackendStatus>,

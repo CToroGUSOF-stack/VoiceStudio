@@ -90,6 +90,11 @@ one-time confirmation per install; afterwards it launches by double-click.
 > Trash"** with no Open option, the download was corrupted or it's a pre-signing
 > build — re-download the latest release, or use the Terminal fallback below.
 
+> Builds after this fix are signed ad hoc by the release build (`identity: '-'`),
+> so they show the friendlier dialog above instead of "damaged". The shell
+> installer also clears quarantine and repairs the signature of older releases
+> for you.
+
 **Fix — Terminal:** after dragging the app into `/Applications`, run:
 
 ```bash

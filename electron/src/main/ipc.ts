@@ -164,7 +164,7 @@ function assertSaveDataRequest(value: unknown): SaveDataRequest {
   };
 }
 
-function assertTrustedMainFrame(
+export function assertTrustedMainFrame(
   event: IpcMainInvokeEvent,
   owner: BrowserWindow | null,
 ): asserts owner is BrowserWindow {
@@ -302,7 +302,7 @@ async function uninstallRoots(supervisor: BackendSupervisor): Promise<UninstallR
   return {
     data: roots.data,
     environment: app.getPath('userData'),
-    runtimeEnvironment: supervisor.ownedRuntimeRoot,
+    runtimeEnvironment: supervisor.ownedRuntimeEntries,
     logs: app.getPath('logs'),
     userEnvironment: join(homedir(), '.config', 'omnivoice'),
     models: roots.models,

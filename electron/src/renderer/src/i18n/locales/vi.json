@@ -22,6 +22,9 @@
     "preset32": "Nguyên bản",
     "sizeUnknown": "Kích thước hiển thị sau khi tạo âm thanh."
   },
+  "presetVoice": {
+    "label": "Giọng có sẵn"
+  },
   "audioQuality": {
     "check": "Kiểm tra âm thanh",
     "failed": "Không thể phân tích âm thanh.",
@@ -352,7 +355,9 @@
   },
   "referenceAsr": {
     "busy": "Phiên âm…",
-    "retry": "Thử chép lại"
+    "retry": "Thử chép lại",
+    "install": "Cài {{label}} ({{size}} GB) để tự động phiên âm",
+    "installing": "Đang tải {{label}}. Sẽ thử phiên âm lại khi hoàn tất."
   },
   "engineSidebar": {
     "tts": "TTS",
@@ -762,6 +767,9 @@
     "burn_subs_title": "Hiển thị phụ đề trực tiếp vào luồng video MP4 (hardsub). Sử dụng định dạng phụ đề kép khi phụ đề kép được bật.",
     "timing_smart_fit": "Khớp thông minh",
     "timing_smart_fit_title": "Chia đôi gánh nặng: tăng nhẹ tốc độ âm thanh (giữ cao độ, tối đa 1,5×) và làm chậm nhẹ đoạn video đó (tối đa 2×) để lời thoại ở nhịp tự nhiên vừa khít. Phần vượt giới hạn sẽ bị cắt và được đánh dấu. Xuất sẽ mã hóa lại video.",
+    "fit_speed_hint": "Giới hạn tốc độ của Smart Fit. Giới hạn hẹp giữ giọng nói tự nhiên; giới hạn rộng giúp vừa nhiều dòng hơn mà không cần cắt. Giá trị mặc định phù hợp với hầu hết video.",
+    "fit_max_speed": "Tốc độ nhanh nhất",
+    "fit_min_speed": "Tốc độ chậm nhất",
     "voice_match": "Khớp giọng:",
     "voice_match_title": "Khớp giọng — mỗi câu lồng tiếng được nhân bản từ đoạn nguồn của chính nó, hay mọi câu của một người nói dùng chung một tham chiếu.",
     "voice_match_per_line": "Theo câu",
@@ -2043,6 +2051,7 @@
     "setup_hint": "Tải Python và các thành phần phụ thuộc của ứng dụng (vài GB). Mô hình giọng nói được cài riêng khi bạn chọn.",
     "installing": "Đang…",
     "setup_space": "Giải phóng ít nhất {{gib}} GiB trên ổ đĩa của ứng dụng rồi thử lại.",
+    "repair_failed": "Tự động sửa môi trường Python chưa hoàn tất. Hãy kiểm tra nhật ký công cụ rồi nhấn Thử lại.",
     "setup_access": "Cho phép ghi vào thư mục dữ liệu của ứng dụng rồi thử lại.",
     "setup_unsupported_platform": "Máy Mac Intel này không thể chạy backend AI cục bộ — PyTorch không có wheel cho macOS Intel. Hãy kết nối backend từ xa bên dưới; không cần cài đặt cục bộ.",
     "setup_wrong_architecture": "Đây là bản VoiceStudio cho Intel (x64) đang chạy qua Rosetta trên máy Mac Apple Silicon, nên không thể cài backend AI cục bộ. Hãy thoát ứng dụng, cài đè bản DMG Apple Silicon (arm64) rồi mở lại — giọng nói và dự án của bạn vẫn được giữ nguyên.",
@@ -2174,7 +2183,13 @@
     "consent_revoke": "Thu hồi",
     "consent_revoke_confirm": "Thu hồi xác minh quyền sở hữu giọng nói? Bản ghi sự đồng ý sẽ bị xóa và các tính năng của nhân viên hỗ trợ sẽ không thể sử dụng giọng nói này nữa.",
     "consent_revoked": "Đã thu hồi xác minh",
-    "test_text": "Xin chào - đây là bài kiểm tra giọng nói này."
+    "test_text": "Xin chào - đây là bài kiểm tra giọng nói này.",
+    "attest_explain": "Đồng bộ đám mây chỉ chia sẻ một giọng nói sau khi bạn xác nhận mình được phép dùng nó.",
+    "attest_own_voice": "Đây là giọng của tôi",
+    "attest_permission": "Tôi có sự cho phép của người nói",
+    "attested_own_voice": "Đã xác nhận: đây là giọng của tôi",
+    "attested_permission": "Đã xác nhận: tôi có sự cho phép của người nói",
+    "attest_clear": "Gỡ xác nhận"
   },
   "nav": {
     "home": "Trang chủ",
@@ -2278,6 +2293,68 @@
     "no": "Không, cảm ơn",
     "dismiss": "Đóng (phân tích vẫn tắt)"
   },
+  "account": {
+    "title": "Tài khoản VoiceStudio",
+    "setup_body": "Không bắt buộc. Đăng nhập vào tài khoản VoiceStudio miễn phí để đồng bộ cài đặt giữa các thiết bị của bạn. Mọi thứ vẫn hoạt động khi không có tài khoản, và không có gì được gửi đi trừ khi bạn bật tính năng này. Bạn có thể thay đổi bất cứ lúc nào trong Cài đặt → Tài khoản.",
+    "use_yes": "Bật tính năng tài khoản",
+    "use_no": "Giữ mọi thứ trên máy",
+    "features": "Tính năng tài khoản",
+    "features_desc": "Khi tắt, ứng dụng không bao giờ liên lạc với VoiceStudio Cloud.",
+    "sync": "Đồng bộ đám mây",
+    "sync_desc": "Tắt sẽ dừng ngay mọi hoạt động đồng bộ. Không có gì trên thiết bị này bị xóa.",
+    "sign_in": "Đăng nhập",
+    "continue_in_browser": "Tiếp tục trong trình duyệt…",
+    "cancel": "Hủy",
+    "sign_out": "Đăng xuất",
+    "signed_in_as": "Đã đăng nhập với tên {{name}}",
+    "signed_out_expired": "Bạn đã bị đăng xuất. Hãy đăng nhập để tiếp tục đồng bộ.",
+    "sign_in_failed": "Đăng nhập đã bị hủy hoặc thất bại",
+    "offline": "Ngoại tuyến: các thay đổi sẽ được đồng bộ sau",
+    "not_remembered": "Chuỗi khóa của hệ thống không khả dụng, vì vậy bạn sẽ cần đăng nhập lại sau khi VoiceStudio khởi động lại.",
+    "menu_settings": "Cài đặt tài khoản",
+    "plan": "Gói",
+    "storage": "Bộ nhớ đám mây",
+    "storage_used": "Đã dùng {{used}} / {{limit}}",
+    "features_title": "Gói của bạn bao gồm",
+    "feature_settings_sync": "Đồng bộ cài đặt giữa các thiết bị",
+    "feature_pro": "Tính năng VoiceStudio Pro",
+    "included": "Có",
+    "not_included": "Không có trong gói của bạn",
+    "plan_ends": "đến {{date}}",
+    "details_failed": "Không thể tải thông tin tài khoản của bạn ({{reason}}).",
+    "retry": "Thử lại"
+  },
+  "cloudsync": {
+    "unavailable": "Đồng bộ hiện không khả dụng.",
+    "choose": "Chọn nội dung cần đồng bộ",
+    "settings": "Cài đặt",
+    "shortcuts": "Phím tắt",
+    "favorites": "Mục yêu thích trong thư viện",
+    "turn_on": "Bật đồng bộ",
+    "device_revoked": "Thiết bị này đã bị gỡ khỏi đồng bộ.",
+    "set_up_again": "Thiết lập lại",
+    "account_suspended": "Tài khoản của bạn bị tạm ngưng. Các tính năng cục bộ vẫn hoạt động.",
+    "storage_full": "Bộ nhớ đám mây đã đầy ({{used}} / {{limit}}). Thay đổi được giữ trên thiết bị này cho đến khi có chỗ trống.",
+    "mass_delete": "Xóa {{count}} mục khỏi đám mây?",
+    "confirm_remove": "Xóa",
+    "conflict": "Đã thay đổi trên thiết bị khác: {{keys}}",
+    "paused": "VoiceStudio đã tạm dừng",
+    "needs_update": "Hãy cập nhật VoiceStudio để đồng bộ {{area}}.",
+    "size": "{{size}} trên đám mây",
+    "turned_off_prompt": "Ngừng đồng bộ {{area}} trên thiết bị này?",
+    "keep_in_cloud": "Giữ trên đám mây",
+    "remove_from_cloud": "Xóa cả khỏi đám mây ({{count}} mục, {{size}})",
+    "voices": "Giọng nói",
+    "takes": "Bản thu",
+    "projects": "Dự án",
+    "dub_projects": "Dự án lồng tiếng",
+    "dictation_history": "Lịch sử đọc chính tả",
+    "pro": "Pro",
+    "use_choices_of": "Dùng cùng lựa chọn với {{device}}",
+    "devices": "Thiết bị",
+    "this_device": "Thiết bị này",
+    "remove_device": "Xóa"
+  },
   "firstrun": {
     "stage_models": "Mô hình & engine",
     "chip_required": "bắt buộc",
@@ -2287,6 +2364,10 @@
     "lib_show_all": "Hiện {{count}} mô hình tùy chọn",
     "env_dir": "Môi trường ứng dụng",
     "env_dir_desc": "Python runtime và các thư viện AI.",
+    "env_dir_desc_scoped": "Runtime Python, thư viện AI, mô hình, dữ liệu của bạn và tệp tạm.",
+    "storage_data": "Dữ liệu",
+    "storage_models": "Mô hình",
+    "storage_temp": "Tệp tạm",
     "change": "Thay đổi…",
     "reset_default": "Đặt lại về mặc định",
     "region_label": "Khu vực tải xuống"
@@ -2818,7 +2899,13 @@
     "audio_io_failed": "Không thể đọc hoặc lưu âm thanh. Kiểm tra định dạng tệp, dung lượng đĩa trống và quyền truy cập tệp. Kiểm tra thư mục trong Cài đặt → Lưu trữ.",
     "no_audio_track": "Tệp này không có rãnh âm thanh nên không có lời nói để chép lời, lồng tiếng hoặc nhân bản. Hãy chọn tệp video hoặc âm thanh có tiếng.",
     "transcription_media_tool": "Chép lời cần ffmpeg, nhưng VoiceStudio không thể tìm thấy hoặc chạy nó. Mở Cài đặt → Công cụ âm thanh và dùng Tải xuống/Sửa chữa, hoặc cài ffmpeg (macOS: brew install ffmpeg; Windows: winget install Gyan.FFmpeg; Linux: trình quản lý gói của bạn) rồi khởi động lại VoiceStudio. Bạn cũng có thể trỏ FFMPEG_PATH tới tệp ffmpeg.",
-    "transcription_pipe_lost": "Backend đã mất kênh đầu ra tới ứng dụng khi đang chép lời (broken pipe). Hãy khởi động lại VoiceStudio và thử lại."
+    "transcription_pipe_lost": "Backend đã mất kênh đầu ra tới ứng dụng khi đang chép lời (broken pipe). Hãy khởi động lại VoiceStudio và thử lại.",
+    "gpu_oom": "GPU đã hết bộ nhớ. Hãy đóng các ứng dụng khác dùng nhiều GPU hoặc gỡ mô hình khỏi bộ nhớ rồi thử lại. Bạn cũng có thể chọn CPU trong Cài đặt → Hiệu năng & Thiết bị hoặc chọn công cụ TTS nhỏ hơn.",
+    "host_memory_exhausted": "Máy tính đã hết bộ nhớ. Hãy đóng các ứng dụng và thẻ trình duyệt khác dùng nhiều bộ nhớ, gỡ các mô hình không dùng, tạo đoạn ngắn hơn hoặc chọn công cụ TTS nhẹ hơn.",
+    "engine_dependency_missing": "Một gói Python mà công cụ này cần chưa được cài đặt nên công cụ không thể khởi động. Hãy mở Danh mục mô hình, chọn công cụ và dùng Cài đặt / Sửa chữa, rồi khởi động lại VoiceStudio.",
+    "reference_stt_missing": "Giọng này không có bản chép lời và chưa cài mô hình chuyển giọng nói thành văn bản để tạo bản chép. Hãy nhập nội dung đoạn âm thanh tham chiếu vào ô bản chép lời (đoạn tối đa 20 giây), hoặc cài mô hình chuyển giọng nói thành văn bản trong Danh mục mô hình, chọn nó rồi tạo lại.",
+    "proxy_gateway_error": "Một proxy hoặc cổng giữa bạn và VoiceStudio đã trả lời HTTP {{status}} thay cho backend. Backend có thể vẫn đang xử lý. Hãy tăng thời gian chờ đọc của proxy (với nginx là proxy_read_timeout) cho các lần tạo dài, rồi kiểm tra Cài đặt → Nhật ký → Backend.",
+    "route_not_found": "Backend VoiceStudio đang chạy không có điểm cuối {{route}}. Hãy khởi động lại VoiceStudio để ứng dụng và backend khớp nhau; nếu vẫn lỗi, hãy cập nhật cả hai lên cùng một phiên bản."
   },
   "network": {
     "copied": "Đã sao chép",

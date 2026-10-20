@@ -16,14 +16,8 @@ struct SettingsView: View {
                 Card {
                     Text(model.t("mobile.settings.appearance"))
                     ChoicePicker(label: model.t("mobile.settings.mode"), selection: Binding(get: { model.theme.mode.rawValue }, set: { model.theme.mode = ThemeMode(rawValue: $0) ?? .dark }), options: ThemeMode.allCases.map { SelectionOption(id: $0.rawValue, title: model.t("mobile.settings.mode_" + $0.rawValue)) })
-                    palette(key: "mobile.settings.light_palette", selection: $model.theme.lightPalette)
-                    palette(key: "mobile.settings.dark_palette", selection: $model.theme.darkPalette)
-                    ForEach(Appearance.allCases, id: \.self) { appearance in
-                        let preview = Theme(palette: appearance == .light ? model.theme.lightPalette : model.theme.darkPalette, appearance: appearance)
-                        Label(model.t(appearance == .light ? "mobile.settings.light_palette" : "mobile.settings.dark_palette"), systemImage: "waveform").padding(Theme.compactInset)
-                            .background(preview.color("messageAction"), in: RoundedRectangle(cornerRadius: VSTokens.radiusControl))
-                            .foregroundStyle(preview.color("messageActionForeground"))
-                    }
+                    palette(key: "mobile.settings.light_palette", selection: $model.theme.lightPalette, appearance: .light)
+                    palette(key: "mobile.settings.dark_palette", selection: $model.theme.darkPalette, appearance: .dark)
                 }
                 Card {
                     ChoicePicker(label: model.t("mobile.settings.language"), selection: $model.language, options:
@@ -35,8 +29,8 @@ struct SettingsView: View {
             Card {
                 Text(model.t("mobile.settings.privacy"))
                 Text(model.t("mobile.settings.privacy_help"))
-                Toggle(model.t("privacy.analytics_title"), isOn: $model.analytics).frame(minHeight: 44)
-                Text(model.t("mobile.ios.privacy_local"))
+                Toggle(model.t("consent.title"), isOn: $model.analytics).frame(minHeight: 44).accessibilityIdentifier("settings.analytics")
+                Text(model.t("mobile.android.analytics_local"))
             }
             Card {
                 Text(model.t("mobile.settings.about"))
@@ -49,8 +43,20 @@ struct SettingsView: View {
             }
         }.navigationTitle(model.t("mobile.tabs.settings")).navigationBarTitleDisplayMode(.large)
     }
-    private func palette(key: String, selection: Binding<String>) -> some View {
-        ChoicePicker(label: model.t(key), selection: selection, options: VSTokens.palettes.map { SelectionOption(id: $0.id, title: Theme.paletteLabel($0, l10n: model.l10n)) })
+    private func palette(key: String, selection: Binding<String>, appearance: Appearance) -> some View {
+        let preview = Theme(palette: selection.wrappedValue, appearance: appearance)
+        return HStack(spacing: VSTokens.spacingGap) {
+            ChoicePicker(label: model.t(key), selection: selection, options: VSTokens.palettes.map { SelectionOption(id: $0.id, title: Theme.paletteLabel($0, l10n: model.l10n)) })
+                .accessibilityIdentifier("settings.palette." + appearance.rawValue)
+            HStack(spacing: 0) {
+                ForEach(["canvas", "surface", "text", "messageAction"], id: \.self) { role in
+                    Rectangle().fill(preview.color(role))
+                }
+            }
+            .frame(width: VSTokens.spacingInset * 2, height: VSTokens.spacingGap * 2)
+            .clipShape(RoundedRectangle(cornerRadius: VSTokens.radiusControl))
+            .accessibilityHidden(true).allowsHitTesting(false)
+        }
     }
 }
 struct LicensesView: View {

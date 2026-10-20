@@ -27,6 +27,8 @@ const define = {
     process.env.VITE_POSTHOG_KEY ?? process.env.POSTHOG_PROJECT_TOKEN ?? '',
   ),
   __POSTHOG_HOST__: JSON.stringify(process.env.VITE_POSTHOG_HOST ?? process.env.POSTHOG_HOST ?? ''),
+  // VoiceStudio Cloud sign-in ships dark in packaged builds until the vssaas production API is live.
+  __CLOUD_ACCOUNTS__: JSON.stringify(process.env.VOICESTUDIO_CLOUD_ACCOUNTS === '1'),
 };
 
 // OMNIVOICE_UI_PORT is canonical (the backend reads it for its origin

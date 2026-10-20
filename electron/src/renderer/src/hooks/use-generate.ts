@@ -335,6 +335,9 @@ function useGenerateController(): UseGenerateClone {
           ),
           wavBits: settings.wavBits,
           effectPreset: settings.effectPreset,
+          presetVoice: activeTts?.preset_voices?.includes(settings.presetVoice)
+            ? settings.presetVoice
+            : undefined,
           cfg: settings.cfg,
           speed: settings.speed,
           tShift: settings.tShift,
@@ -389,7 +392,7 @@ function useGenerateController(): UseGenerateClone {
           .catch(() => {});
       }
     },
-    [queryClient, onProgress, blocker, designBlockerFor, instructVocabulary],
+    [queryClient, onProgress, blocker, designBlockerFor, instructVocabulary, activeTts],
   );
 
   const cancel = useCallback(() => {

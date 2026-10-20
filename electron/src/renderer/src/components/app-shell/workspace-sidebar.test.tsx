@@ -42,6 +42,7 @@ vi.mock('./workspace-menu', () => ({
 }));
 vi.mock('./status-bar', () => ({ StatusBar: () => <div data-testid="status" /> }));
 vi.mock('./system-notifications', () => ({ SystemNotifications: () => null }));
+
 vi.mock('./use-workspace-sidebar', () => ({
   useWorkspaceSidebarState: () => ({
     compact: sidebar.compact,
@@ -95,3 +96,4 @@ it('uses the plain version label outside development builds', () => {
   expect(versionTranslationKey(true)).toBe('app.version_dev');
   expect(versionTranslationKey(false)).toBe('app.version');
 });
+

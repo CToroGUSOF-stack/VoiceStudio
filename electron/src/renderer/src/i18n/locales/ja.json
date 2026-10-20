@@ -22,6 +22,9 @@
     "preset32": "オリジナル",
     "sizeUnknown": "生成後にサイズを表示します。"
   },
+  "presetVoice": {
+    "label": "プリセット音声"
+  },
   "audioQuality": {
     "check": "音声を確認",
     "failed": "音声を解析できません。",
@@ -352,7 +355,9 @@
   },
   "referenceAsr": {
     "busy": "文字起こし中…",
-    "retry": "転写を再試行する"
+    "retry": "転写を再試行する",
+    "install": "自動で文字起こしするには {{label}}（{{size}} GB）をインストールしてください",
+    "installing": "{{label}} をダウンロード中です。完了すると文字起こしを再試行します。"
   },
   "engineSidebar": {
     "tts": "TTS",
@@ -762,6 +767,9 @@
     "burn_subs_title": "字幕を MP4 ビデオ ストリームに直接レンダリングします (ハードサブ)。デュアル字幕がオンの場合は、デュアル字幕形式を使用します。",
     "timing_smart_fit": "スマートフィット",
     "timing_smart_fit_title": "両方を少しずつ調整します。音声をわずかに速め（ピッチ維持、最大1.5倍）、そのセグメントの映像をわずかに遅くする（最大2倍）ことで、自然な話速のまま収めます。上限を超えた分はトリミングされ、フラグが付きます。書き出し時に映像を再エンコードします。",
+    "fit_speed_hint": "スマートフィットの速度制限です。制限が狭いほど自然な話し方を保ち、広いほどカットせずに多くの行を収められます。既定値はほとんどの動画に適しています。",
+    "fit_max_speed": "最速",
+    "fit_min_speed": "最遅",
     "voice_match": "声の一致:",
     "voice_match_title": "声の一致 — 各セリフを自身のソースクリップからクローンするか、話者の全セリフで1つの参照を共有するか。",
     "voice_match_per_line": "行ごと",
@@ -2043,6 +2051,7 @@
     "setup_hint": "Pythonとアプリの依存関係（数GB）をダウンロードします。音声モデルは選択時に個別にインストールされます。",
     "installing": "依存関係のインストール中…",
     "setup_space": "アプリのドライブに{{gib}} GiB以上の空き容量を確保して、再試行してください。",
+    "repair_failed": "Python 環境の自動修復が完了しませんでした。エンジンのログを確認して、再試行を押してください。",
     "setup_access": "アプリのデータフォルダーへの書き込みを許可して、再試行してください。",
     "setup_unsupported_platform": "このIntel MacではローカルAIバックエンドを実行できません — PyTorchにmacOS Intel用wheelがありません。代わりに下でリモートバックエンドに接続してください。ローカルインストールは不要です。",
     "setup_wrong_architecture": "これは Apple Silicon Mac 上の Rosetta で動作している VoiceStudio の Intel (x64) 版のため、ローカル AI バックエンドをインストールできません。アプリを終了し、Apple Silicon (arm64) 版の DMG を上書きインストールしてから再度開いてください。ボイスとプロジェクトはそのまま残ります。",
@@ -2174,7 +2183,13 @@
     "consent_revoke": "取り消し",
     "consent_revoke_confirm": "音声所有権の確認を取り消しますか?同意の録音は削除され、エージェント機能はこの音声を使用できなくなります。",
     "consent_revoked": "検証が取り消されました",
-    "test_text": "こんにちは — これはこの音声のテストです。"
+    "test_text": "こんにちは — これはこの音声のテストです。",
+    "attest_explain": "クラウド同期は、使用してよいことを確認した後にのみボイスを共有します。",
+    "attest_own_voice": "これは自分の声です",
+    "attest_permission": "話者の許可を得ています",
+    "attested_own_voice": "確認済み：自分の声です",
+    "attested_permission": "確認済み：話者の許可を得ています",
+    "attest_clear": "確認を取り消す"
   },
   "nav": {
     "home": "ホーム",
@@ -2278,6 +2293,68 @@
     "no": "いいえ",
     "dismiss": "閉じる（アナリティクスはオフのまま）"
   },
+  "account": {
+    "title": "VoiceStudio アカウント",
+    "setup_body": "任意です。無料の VoiceStudio アカウントにサインインすると、デバイス間で設定を同期できます。アカウントがなくてもすべての機能が使え、オンにしない限り何も送信されません。設定 → アカウント でいつでも変更できます。",
+    "use_yes": "アカウント機能をオンにする",
+    "use_no": "すべてローカルに保つ",
+    "features": "アカウント機能",
+    "features_desc": "オフの場合、アプリは VoiceStudio Cloud に一切接続しません。",
+    "sync": "クラウド同期",
+    "sync_desc": "オフにするとすべての同期がすぐに停止します。このデバイス上のデータは削除されません。",
+    "sign_in": "サインイン",
+    "continue_in_browser": "ブラウザで続行してください…",
+    "cancel": "キャンセル",
+    "sign_out": "サインアウト",
+    "signed_in_as": "{{name}} としてサインイン中",
+    "signed_out_expired": "サインアウトされました。同期を続けるにはサインインしてください。",
+    "sign_in_failed": "サインインがキャンセルされたか、失敗しました",
+    "offline": "オフライン：変更は後で同期されます",
+    "not_remembered": "システムのキーリングを利用できないため、VoiceStudio の再起動後にもう一度サインインする必要があります。",
+    "menu_settings": "アカウント設定",
+    "plan": "プラン",
+    "storage": "クラウドストレージ",
+    "storage_used": "{{limit}} 中 {{used}} を使用",
+    "features_title": "プランに含まれるもの",
+    "feature_settings_sync": "デバイス間での設定の同期",
+    "feature_pro": "VoiceStudio Pro の機能",
+    "included": "含まれます",
+    "not_included": "プランに含まれません",
+    "plan_ends": "{{date}} まで",
+    "details_failed": "アカウントの詳細を読み込めませんでした（{{reason}}）。",
+    "retry": "再試行"
+  },
+  "cloudsync": {
+    "unavailable": "現在、同期を利用できません。",
+    "choose": "同期する項目を選択",
+    "settings": "設定",
+    "shortcuts": "ショートカット",
+    "favorites": "ギャラリーのお気に入り",
+    "turn_on": "同期をオンにする",
+    "device_revoked": "このデバイスは同期から削除されました。",
+    "set_up_again": "もう一度設定する",
+    "account_suspended": "アカウントは停止されています。ローカルの機能は引き続き使えます。",
+    "storage_full": "クラウドストレージがいっぱいです（{{used}} / {{limit}}）。空きができるまで、変更はこのデバイスに保存されます。",
+    "mass_delete": "クラウドから {{count}} 件の項目を削除しますか？",
+    "confirm_remove": "削除",
+    "conflict": "別のデバイスで変更されました：{{keys}}",
+    "paused": "VoiceStudio により一時停止中",
+    "needs_update": "{{area}} を同期するには VoiceStudio を更新してください。",
+    "size": "クラウド上に {{size}}",
+    "turned_off_prompt": "このデバイスで {{area}} の同期を停止しますか？",
+    "keep_in_cloud": "クラウドに残す",
+    "remove_from_cloud": "クラウドからも削除する（{{count}} 件、{{size}}）",
+    "voices": "ボイス",
+    "takes": "テイク",
+    "projects": "プロジェクト",
+    "dub_projects": "吹き替えプロジェクト",
+    "dictation_history": "音声入力の履歴",
+    "pro": "Pro",
+    "use_choices_of": "{{device}} と同じ選択を使う",
+    "devices": "デバイス",
+    "this_device": "このデバイス",
+    "remove_device": "削除"
+  },
   "firstrun": {
     "stage_models": "モデルとエンジン",
     "chip_required": "必須",
@@ -2287,6 +2364,10 @@
     "lib_show_all": "任意モデル {{count}} 件を表示",
     "env_dir": "アプリ実行環境",
     "env_dir_desc": "Python ランタイムと AI ライブラリ。",
+    "env_dir_desc_scoped": "Python ランタイム、AI ライブラリ、モデル、データ、一時ファイル。",
+    "storage_data": "データ",
+    "storage_models": "モデル",
+    "storage_temp": "一時ファイル",
     "change": "変更…",
     "reset_default": "デフォルトにリセットする",
     "region_label": "ダウンロード地域"
@@ -2818,7 +2899,13 @@
     "audio_io_failed": "音声を読み込むか保存することができませんでした。ファイル形式、ディスクの空き容量、ファイルのアクセス権を確認してください。設定 → ストレージでフォルダーを確認してください。",
     "no_audio_track": "このファイルには音声トラックがないため、文字起こし・吹き替え・クローンする音声がありません。音声を含む動画または音声ファイルを選んでください。",
     "transcription_media_tool": "文字起こしには ffmpeg が必要ですが、VoiceStudio は見つけられないか実行できませんでした。設定 → オーディオツールを開いてダウンロード/修復を使うか、ffmpeg をインストール（macOS: brew install ffmpeg、Windows: winget install Gyan.FFmpeg、Linux: お使いのパッケージマネージャー）して VoiceStudio を再起動してください。FFMPEG_PATH を ffmpeg のファイルに向けることもできます。",
-    "transcription_pipe_lost": "文字起こし中にバックエンドがアプリへの出力パイプを失いました（broken pipe）。VoiceStudio を再起動してもう一度お試しください。"
+    "transcription_pipe_lost": "文字起こし中にバックエンドがアプリへの出力パイプを失いました（broken pipe）。VoiceStudio を再起動してもう一度お試しください。",
+    "gpu_oom": "GPU のメモリが不足しました。GPU を多く使う他のアプリを閉じるかモデルをアンロードしてから、もう一度お試しください。設定 → パフォーマンスとデバイスで CPU を選ぶか、より小さな TTS エンジンを選ぶこともできます。",
+    "host_memory_exhausted": "コンピューターのメモリが不足しました。メモリを多く使う他のアプリやブラウザータブを閉じ、使っていないモデルをアンロードし、短い文章で生成するか、より軽い TTS エンジンを選んでください。",
+    "engine_dependency_missing": "このエンジンに必要な Python パッケージがインストールされていないため、エンジンを起動できませんでした。モデルカタログを開き、エンジンを選んでインストール/修復を使い、VoiceStudio を再起動してください。",
+    "reference_stt_missing": "この音声には文字起こしがなく、作成するための音声認識モデルもインストールされていません。参照クリップの内容を文字起こし欄に入力する（20 秒までのクリップ）か、モデルカタログで音声認識モデルをインストールして選択し、もう一度生成してください。",
+    "proxy_gateway_error": "お使いの環境と VoiceStudio の間のプロキシまたはゲートウェイが、バックエンドの代わりに HTTP {{status}} を返しました。バックエンドはまだ処理中の可能性があります。長い生成のためにプロキシの読み取りタイムアウト（nginx では proxy_read_timeout）を延ばし、設定 → ログ → バックエンドを確認してください。",
+    "route_not_found": "実行中の VoiceStudio バックエンドに {{route}} エンドポイントがありません。アプリとバックエンドを一致させるため VoiceStudio を再起動してください。解決しない場合は両方を同じバージョンに更新してください。"
   },
   "network": {
     "copied": "コピーされました",

@@ -108,6 +108,30 @@ describe('packaged runtime setup', () => {
       expect(await runtimeReady(bundle, project)).toBe(true);
     },
   );
+  it.each([
+    ['after printing its result', true],
+    ['before printing anything', false],
+  ])('keeps setting up when the CUDA compatibility probe crashes natively %s', async (_name, printed) => {
+    forcePlatform('win32');
+    vi.spyOn(process, 'arch', 'get').mockReturnValue('x64');
+    vi.stubEnv('OMNIVOICE_TORCH_VARIANT', 'cuda');
+    const { bundle, project } = await fixture();
+    const sitePackages = join(project, '.venv', 'Lib', 'site-packages');
+    const run = vi.fn(async (_command: string, args: string[]) => {
+      if (args[0] === 'sync') await interpreter(project);
+      if (args[1]?.includes('VOICESTUDIO_CUDNN8_PROBE=')) {
+        throw Object.assign(new Error('Runtime setup exited with code 3221225477'), {
+          stdout: printed
+            ? `VOICESTUDIO_CUDNN8_PROBE=${JSON.stringify({ device: 'none', sitePackages })}\n`
+            : '',
+        });
+      }
+      return undefined;
+    });
+    await installRuntime(bundle, project, 'uv', run, new AbortController().signal, undefined, 'global');
+    expect(run.mock.calls.some(([, args]) => args[1] === RUNTIME_IMPORT_PROBE)).toBe(true);
+    expect(await runtimeReady(bundle, project)).toBe(true);
+  });
   it.each([0, 1])(
     'verifies the runtime when .pth repair attempt %i fails',
     async (failedAttempt) => {
@@ -265,6 +289,8 @@ describe('packaged runtime setup', () => {
 
     const syncEnv = run.mock.calls[0]?.[3];
     expect(syncEnv?.UV_CACHE_DIR).toBe(join(project, '..', '.uv-cache'));
+    for (const key of ['TEMP', 'TMP', 'TMPDIR'])
+      expect(syncEnv?.[key]).toBe(join(project, '..', '.tmp'));
     expect(syncEnv?.UV_PYTHON_INSTALL_DIR).toBe(join(project, '..', '.python'));
   });
   it('uses managed Python for new runtime setup and verifies native tokenizer imports', async () => {
@@ -531,6 +557,26 @@ describe('packaged runtime setup', () => {
     await expect(readFile(join(project, 'backend', 'obsolete.py'))).rejects.toThrow();
     expect(await readFile(runtimePython(project), 'utf8')).toBe('interpreter');
     expect(await readFile(join(project, 'personal.txt'), 'utf8')).toBe('preserve');
+  });
+  it('falls back to an in-place copy when Windows keeps a folder locked (#3010, #2669)', async () => {
+    const { bundle, project } = await fixture();
+    await stageRuntimeSources(bundle, project);
+    await writeFile(join(project, 'backend', 'obsolete.py'), 'old');
+    await writeFile(join(bundle, 'backend', 'main.py'), 'new');
+    const locked = async () => {
+      throw Object.assign(new Error('EPERM: operation not permitted, rename'), { code: 'EPERM' });
+    };
+    await stageRuntimeSources(bundle, project, locked);
+    expect(await readFile(join(project, 'backend', 'main.py'), 'utf8')).toBe('new');
+    expect(existsSync(join(project, 'backend', 'obsolete.py'))).toBe(false);
+    expect(existsSync(join(project, '.incoming-backend'))).toBe(false);
+  });
+  it('still fails on a rename error that is not a lock', async () => {
+    const { bundle, project } = await fixture();
+    const broken = async () => {
+      throw Object.assign(new Error('ENOSPC'), { code: 'ENOSPC' });
+    };
+    await expect(stageRuntimeSources(bundle, project, broken)).rejects.toThrow('ENOSPC');
   });
   it('does not leave a ready marker after a failed repair', async () => {
     const { bundle, project } = await fixture();

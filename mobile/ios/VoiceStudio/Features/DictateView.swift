@@ -15,21 +15,32 @@ struct DictateView: View {
     @State private var receiving: Task<Void, Never>?
     @State private var audio = DictationAudio()
     @State private var stream = DictationStream()
+    @GestureState private var holding = false
     var body: some View {
         Page {
             if checking { ProgressView(model.t("common.loading")) }
             else if !ready { Text(model.t("mobile.dictate.not_ready", ["reason": reason])) }
             Button(model.t(listening ? "common.stop" : "mobile.dictate.tap_to_start"), systemImage: listening ? "stop.fill" : "mic.fill") {
                 if listening { stop() } else { start() }
-            }.buttonStyle(VSButtonStyle(kind: .primary)).disabled(!ready || finalizing).accessibilityHint(model.t("mobile.dictate.hold_to_talk")).accessibilityIdentifier("dictate.record")
-            // The separate hold surface supports release-to-finish without competing with tap semantics.
-            Text(model.t("mobile.dictate.hold_to_talk")).frame(minHeight: 44).frame(maxWidth: .infinity)
-                .contentShape(Rectangle())
-                .onLongPressGesture(minimumDuration: 0.2, pressing: { pressed in
-                    if pressed && ready && !listening { start() }
-                    else if !pressed && listening { stop() }
-                }, perform: {})
-                .accessibilityAddTraits(.isButton).accessibilityAction { if listening { stop() } else { start() } }
+            }.buttonStyle(VSButtonStyle(kind: .primary)).disabled(!ready || finalizing)
+                .accessibilityHint(model.t("mobile.dictate.hold_to_talk")).accessibilityIdentifier("dictate.record")
+                // One surface: the exclusive gesture prevents a hold's release
+                // from also toggling the button. Native accessibility activates its action.
+                .highPriorityGesture(
+                    LongPressGesture(minimumDuration: 0.2)
+                        .sequenced(before: DragGesture(minimumDistance: 0))
+                        .exclusively(before: TapGesture())
+                        .updating($holding) { value, state, _ in
+                            if case .first(.second(true, _)) = value { state = true }
+                        }
+                        .onEnded { value in
+                            if case .second = value { if listening { stop() } else { start() } }
+                        }
+                )
+                .onChange(of: holding) { _, pressed in
+                    if pressed { start() }
+                    else if listening { stop() }
+                }
             if listening { Text(model.t("mobile.dictate.listening")) }
             Text(text).frame(maxWidth: .infinity, alignment: .leading)
                 .textSelection(.enabled).accessibilityLabel(model.t("mobile.ios.transcript"))

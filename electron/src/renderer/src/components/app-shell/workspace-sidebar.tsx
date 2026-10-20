@@ -11,16 +11,12 @@ import { useWorkspaceSidebarState } from './use-workspace-sidebar';
 import { VoicesSidebar } from '@/features/clone/voices-sidebar';
 import { WorkspaceNavigation } from './workspace-menu';
 import { StatusBar } from './status-bar';
-import { SystemNotifications } from './system-notifications';
-import { useBackendStatus } from '@/hooks/use-backend-status';
-import { isBackendReachable } from '@shared/utils/backendStage';
 
 export function versionTranslationKey(development: boolean) {
   return development ? ('app.version_dev' as const) : ('app.version' as const);
 }
 
 export function WorkspaceSidebar() {
-  const backend = useBackendStatus();
   const { t } = useTranslation();
   const mac = isMac();
   const versionLabel = t(versionTranslationKey(import.meta.env.DEV), {
@@ -109,7 +105,6 @@ export function WorkspaceSidebar() {
               />
             </Link>
             {mac && <StatusBar compact inline />}
-            {!mac && <SystemNotifications enabled={isBackendReachable(backend.stage)} compact />}
           </div>
         </aside>
       )}
@@ -203,7 +198,6 @@ export function WorkspaceSidebar() {
                   />
                   {t('nav.settings')}
                 </Link>
-                <SystemNotifications enabled={isBackendReachable(backend.stage)} />
               </div>
             )}
           </div>

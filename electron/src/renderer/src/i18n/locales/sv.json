@@ -22,6 +22,9 @@
     "preset32": "Original",
     "sizeUnknown": "Storleken visas efter genereringen."
   },
+  "presetVoice": {
+    "label": "Förinställd röst"
+  },
   "audioQuality": {
     "check": "Kontrollera ljud",
     "failed": "Ljudanalys är inte tillgänglig.",
@@ -352,7 +355,9 @@
   },
   "referenceAsr": {
     "busy": "Transkriberar...",
-    "retry": "Försök att transkriptera igen"
+    "retry": "Försök att transkriptera igen",
+    "install": "Installera {{label}} ({{size}} GB) för att transkribera automatiskt",
+    "installing": "Laddar ner {{label}}. Transkriberingen försöks igen när det är klart."
   },
   "engineSidebar": {
     "tts": "TTS",
@@ -762,6 +767,9 @@
     "burn_subs_title": "Återge undertexter direkt i MP4-videoströmmen (hardsubs). Använder formatet med dubbla undertexter när dubbla undertexter är på.",
     "timing_smart_fit": "Smart anpassning",
     "timing_smart_fit_title": "Delar upp anpassningen: snabbar upp ljudet något (tonhöjd bevaras, upp till 1,5×) och saktar ner det videosegmentet något (upp till 2×) så att tal i naturligt tempo får plats. Det som ändå inte ryms klipps och flaggas. Export omkodar videon.",
+    "fit_speed_hint": "Hastighetsgränser för Smart anpassning. Snävare gränser håller talet naturligt; vidare gränser får in fler rader utan att klippa. Standardvärdena passar de flesta videor.",
+    "fit_max_speed": "Snabbaste tempo",
+    "fit_min_speed": "Långsammaste tempo",
     "voice_match": "Röstmatchning:",
     "voice_match_title": "Röstmatchning — om varje dubbad rad klonas från sitt eget källklipp eller om alla rader från en talare delar en gemensam referens.",
     "voice_match_per_line": "Per rad",
@@ -2043,6 +2051,7 @@
     "setup_hint": "Hämta Python och appens beroenden (flera GB). Röstmodeller installeras separat när du väljer dem.",
     "installing": "Installerar…",
     "setup_space": "Frigör minst {{gib}} GiB på appens disk och försök igen.",
+    "repair_failed": "Den automatiska reparationen av Python-miljön blev inte klar. Kontrollera motorloggen och tryck på Försök igen.",
     "setup_access": "Tillåt skrivåtkomst till appens datamapp och försök igen.",
     "setup_unsupported_platform": "Den här Intel-Macen kan inte köra den lokala AI-backendservern — PyTorch saknar macOS Intel-hjul. Anslut en fjärrbackend nedan istället; ingen lokal installation behövs.",
     "setup_wrong_architecture": "Det här är Intel-versionen (x64) av VoiceStudio som körs via Rosetta på en Mac med Apple Silicon, så den lokala AI-backenden kan inte installeras. Avsluta appen, installera Apple Silicon-DMG:n (arm64) ovanpå och öppna den igen – dina röster och projekt finns kvar.",
@@ -2174,7 +2183,13 @@
     "consent_revoke": "Återkalla",
     "consent_revoke_confirm": "Återkalla verifiering av röstägande? Samtyckesinspelningen kommer att raderas och agentfunktioner kommer inte längre att kunna använda denna röst.",
     "consent_revoked": "Verifieringen återkallad",
-    "test_text": "Hej – det här är ett test av denna röst."
+    "test_text": "Hej – det här är ett test av denna röst.",
+    "attest_explain": "Molnsynkning delar en röst först när du har bekräftat att du får använda den.",
+    "attest_own_voice": "Det här är min röst",
+    "attest_permission": "Jag har talarens tillstånd",
+    "attested_own_voice": "Bekräftat: det här är min röst",
+    "attested_permission": "Bekräftat: jag har talarens tillstånd",
+    "attest_clear": "Ta bort bekräftelse"
   },
   "nav": {
     "home": "Hem",
@@ -2278,6 +2293,68 @@
     "no": "Nej tack",
     "dismiss": "Stäng (analys förblir av)"
   },
+  "account": {
+    "title": "VoiceStudio-konto",
+    "setup_body": "Valfritt. Logga in på ett kostnadsfritt VoiceStudio-konto för att synka inställningar mellan dina enheter. Allt fungerar utan konto, och inget skickas om du inte slår på det här. Du kan ändra det när som helst under Inställningar → Konto.",
+    "use_yes": "Slå på kontofunktioner",
+    "use_no": "Behåll allt lokalt",
+    "features": "Kontofunktioner",
+    "features_desc": "Av betyder att appen aldrig kontaktar VoiceStudio Cloud.",
+    "sync": "Molnsynkning",
+    "sync_desc": "Av stoppar all synkning direkt. Inget på den här enheten raderas.",
+    "sign_in": "Logga in",
+    "continue_in_browser": "Fortsätt i webbläsaren…",
+    "cancel": "Avbryt",
+    "sign_out": "Logga ut",
+    "signed_in_as": "Inloggad som {{name}}",
+    "signed_out_expired": "Du loggades ut. Logga in för att fortsätta synka.",
+    "sign_in_failed": "Inloggningen avbröts eller misslyckades",
+    "offline": "Offline: ändringar synkas senare",
+    "not_remembered": "Systemets nyckelring är inte tillgänglig, så du behöver logga in igen när VoiceStudio har startats om.",
+    "menu_settings": "Kontoinställningar",
+    "plan": "Abonnemang",
+    "storage": "Molnlagring",
+    "storage_used": "{{used}} av {{limit}} används",
+    "features_title": "Ditt abonnemang innehåller",
+    "feature_settings_sync": "Synkning av inställningar mellan enheter",
+    "feature_pro": "VoiceStudio Pro-funktioner",
+    "included": "Ingår",
+    "not_included": "Ingår inte i ditt abonnemang",
+    "plan_ends": "till {{date}}",
+    "details_failed": "Det gick inte att läsa in dina kontouppgifter ({{reason}}).",
+    "retry": "Försök igen"
+  },
+  "cloudsync": {
+    "unavailable": "Synkning är inte tillgänglig just nu.",
+    "choose": "Välj vad som synkas",
+    "settings": "Inställningar",
+    "shortcuts": "Kortkommandon",
+    "favorites": "Galleriets favoriter",
+    "turn_on": "Slå på synkning",
+    "device_revoked": "Den här enheten togs bort från synkningen.",
+    "set_up_again": "Konfigurera igen",
+    "account_suspended": "Ditt konto är avstängt. Lokala funktioner fungerar fortfarande.",
+    "storage_full": "Molnlagringen är full ({{used}} / {{limit}}). Ändringar stannar på den här enheten tills det finns plats.",
+    "mass_delete": "Ta bort {{count}} objekt från molnet?",
+    "confirm_remove": "Ta bort",
+    "conflict": "Ändrat på en annan enhet: {{keys}}",
+    "paused": "Pausat av VoiceStudio",
+    "needs_update": "Uppdatera VoiceStudio för att synka {{area}}.",
+    "size": "{{size}} i molnet",
+    "turned_off_prompt": "Sluta synka {{area}} på den här enheten?",
+    "keep_in_cloud": "Behåll i molnet",
+    "remove_from_cloud": "Ta även bort från molnet ({{count}} objekt, {{size}})",
+    "voices": "Röster",
+    "takes": "Tagningar",
+    "projects": "Projekt",
+    "dub_projects": "Dubbningsprojekt",
+    "dictation_history": "Dikteringshistorik",
+    "pro": "Pro",
+    "use_choices_of": "Använd samma val som {{device}}",
+    "devices": "Enheter",
+    "this_device": "Den här enheten",
+    "remove_device": "Ta bort"
+  },
   "firstrun": {
     "stage_models": "Modeller & motorer",
     "chip_required": "krävs",
@@ -2287,6 +2364,10 @@
     "lib_show_all": "Visa {{count}} valfria modeller",
     "env_dir": "Appmiljö",
     "env_dir_desc": "Python-runtime och AI-bibliotek.",
+    "env_dir_desc_scoped": "Python-miljö, AI-bibliotek, modeller, dina data och tillfälliga filer.",
+    "storage_data": "Data",
+    "storage_models": "Modeller",
+    "storage_temp": "Tillfälliga filer",
     "change": "Ändra…",
     "reset_default": "Återställ till standard",
     "region_label": "Nedladdningsregion"
@@ -2818,7 +2899,13 @@
     "audio_io_failed": "Ljudet kunde inte läsas eller sparas. Kontrollera filformat, ledigt diskutrymme och filbehörigheter. Kontrollera mappen under Inställningar → Lagring.",
     "no_audio_track": "Filen saknar ljudspår, så det finns inget tal att transkribera, dubba eller klona. Välj en video- eller ljudfil som innehåller ljud.",
     "transcription_media_tool": "Transkribering kräver ffmpeg, som VoiceStudio inte kunde hitta eller köra. Öppna Inställningar → Ljudverktyg och använd Ladda ned/Reparera, eller installera ffmpeg (macOS: brew install ffmpeg; Windows: winget install Gyan.FFmpeg; Linux: din pakethanterare) och starta om VoiceStudio. Du kan också peka FFMPEG_PATH mot en ffmpeg-fil.",
-    "transcription_pipe_lost": "Backend förlorade sin utdatakanal till appen under transkriberingen (broken pipe). Starta om VoiceStudio och försök igen."
+    "transcription_pipe_lost": "Backend förlorade sin utdatakanal till appen under transkriberingen (broken pipe). Starta om VoiceStudio och försök igen.",
+    "gpu_oom": "GPU:n fick slut på minne. Stäng andra GPU-tunga appar eller avlasta modeller och försök igen. Du kan också välja CPU under Inställningar → Prestanda och enhet eller välja en mindre TTS-motor.",
+    "host_memory_exhausted": "Datorn fick slut på minne. Stäng andra minnestunga appar och webbläsarflikar, avlasta modeller du inte använder, generera ett kortare stycke eller välj en lättare TTS-motor.",
+    "engine_dependency_missing": "Ett Python-paket som den här motorn behöver är inte installerat, så motorn kunde inte starta. Öppna Modellkatalogen, välj motorn och använd Installera / Reparera och starta sedan om VoiceStudio.",
+    "reference_stt_missing": "Rösten saknar transkription och ingen tal-till-text-modell är installerad för att skapa en. Skriv in vad referensklippet säger i transkriptionsrutan (klipp upp till 20 sekunder) eller installera en tal-till-text-modell i Modellkatalogen, välj den och generera igen.",
+    "proxy_gateway_error": "En proxy eller gateway mellan dig och VoiceStudio svarade HTTP {{status}} i stället för backend. Backend kanske fortfarande arbetar. Höj proxyns läs-timeout (i nginx proxy_read_timeout) för långa genereringar och kontrollera sedan Inställningar → Loggar → Backend.",
+    "route_not_found": "Den körande VoiceStudio-backenden har ingen {{route}}-ändpunkt. Starta om VoiceStudio så att appen och backend matchar; om det kvarstår, uppdatera båda till samma version."
   },
   "network": {
     "copied": "Kopierade",

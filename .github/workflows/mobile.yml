@@ -103,7 +103,24 @@ jobs:
         run: |
           xcodebuild -project mobile/ios/VoiceStudio/VoiceStudio.xcodeproj \
             -scheme VoiceStudio -destination "id=$SIM_UDID" \
+            -resultBundlePath "$RUNNER_TEMP/ui.xcresult" \
             CODE_SIGNING_ALLOWED=NO test-without-building
+
+      # ScreenshotTour keeps a screenshot of every screen; export them for review.
+      - name: Export UI screenshots
+        if: always()
+        run: |
+          [ -d "$RUNNER_TEMP/ui.xcresult" ] || exit 0
+          mkdir -p "$RUNNER_TEMP/shots"
+          xcrun xcresulttool export attachments --path "$RUNNER_TEMP/ui.xcresult" --output-path "$RUNNER_TEMP/shots"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: ios-screenshots
+          path: ${{ runner.temp }}/shots
+          if-no-files-found: ignore
+          retention-days: 7
 
       # Unsigned device build for maintainers to sideload onto their own iPhone
       # (it is signed on install with their Apple ID; see docs/mobile.md). Not a
