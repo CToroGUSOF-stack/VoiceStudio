@@ -101,9 +101,7 @@
     "dub": "Traduci e doppia audio o video.",
     "stories": "Crea scene con più voci.",
     "audiobook": "Crea audiolibri con capitoli.",
-    "transcribe": "Trasforma le registrazioni in testo.",
-    "collapseFooter": "Comprimi piè di pagina",
-    "expandFooter": "Espandi piè di pagina"
+    "transcribe": "Trasforma le registrazioni in testo."
   },
   "twilioIntegration": {
     "exposureWarning": "Attivandolo si apre una porta locale separata che il tuo tunnel pubblica su internet. Sono accettate solo richieste firmate con il tuo Auth Token Twilio; il resto di VoiceStudio resta privato.",
@@ -2888,37 +2886,6 @@
     "progress": "{{done}} / {{total}} segmenti convalidati",
     "cancelled": "Annullato",
     "fitting": "Regolazione dei tempi"
-  },
-  "sponsorSlot": {
-    "partner_heading": "Diventa partner di VoiceStudio",
-    "partner_subtitle": "Presenta il tuo prodotto a chi crea con la voce.",
-    "app_placement": "Visibilità nell’app",
-    "integration_page": "Pagina integrazione",
-    "readme_exposure": "Visibilità nel README",
-    "visibility": "Visibilità",
-    "integration": "Integrazione del prodotto",
-    "installs": "Installazioni dirette",
-    "distribution": "Distribuzione per sviluppatori",
-    "partner": "Partner verificato",
-    "privacy": "Privacy",
-    "title": "In evidenza su VoiceStudio",
-    "description": "Aumenta la visibilità del tuo brand sponsorizzando uno spazio in evidenza a pagamento.",
-    "form": "Modulo Google",
-    "email": "Email",
-    "book": "Prenota il tuo spazio",
-    "preview": "Anteprima sponsor",
-    "footer_brand": "Diventa sponsor",
-    "footer_promo": "Promuovi la tua attività",
-    "footer_downloads": "Download degli installer Electron",
-    "footer_views": "Visualizzazioni del repository GitHub (14 giorni)",
-    "footer_stars": "Stelle GitHub",
-    "footer_stats_note": "Dati GitHub verificati il 25 set 2026. Download dalla v0.5.3; visualizzazioni dal 10 al 23 set.",
-    "footer_book": "Aggiungi ora",
-    "email_template": "Ciao team VoiceStudio,\n\nVorrei collaborare con VoiceStudio e valutare una presenza in evidenza per il mio brand.\n\nBrand / prodotto:\nSito web:\nIntegrazione o campagna:\nPubblico / tempistiche:\n\nPotete condividere pacchetti, prezzi, opzioni di visibilità e requisiti tecnici? Ho capito che una partnership in evidenza può includere una pagina docs, un logo nel README GitHub, uno spazio nel footer dell’app e una presenza nella directory Integrations.\n\nGrazie,\n[Nome]\n[Ruolo / azienda]\n[Contatto]",
-    "message": "Il tuo marchio, sito e messaggio",
-    "email_app": "Apri l’app email",
-    "copy_email": "Copia email",
-    "preview_detail": "Qui potrebbero apparire il tuo logo, link e presentazione."
   },
   "supportPlans": {
     "remove": "Rimuovi barra sponsor",

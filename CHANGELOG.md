@@ -36,6 +36,10 @@ metadata and the backend fallback mirror it.
 
 - The installed app now rebuilds a Python environment that antivirus or disk cleanup removed, once per launch with the usual setup progress, instead of stopping at a setup error; your voices and projects are untouched (#3032) — thanks @afraniohugo and @javalovelinux-cmd!
 
+### Changed
+
+- The sponsor footer is gone from the app; sponsored integrations keep a Featured badge on their card in Integrations (#3031)
+
 ### Docs
 
 - OmniVoice GGUF docs state that the installers do not ship its native binary yet (#3026) — thanks @DestinyQJY!

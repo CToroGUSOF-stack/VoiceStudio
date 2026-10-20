@@ -101,9 +101,7 @@
     "dub": "Översätt och dubba ljud eller video.",
     "stories": "Skapa scener med flera röster.",
     "audiobook": "Skapa ljudböcker med kapitel.",
-    "transcribe": "Omvandla inspelningar till text.",
-    "collapseFooter": "Fäll ihop sidfoten",
-    "expandFooter": "Fäll ut sidfoten"
+    "transcribe": "Omvandla inspelningar till text."
   },
   "twilioIntegration": {
     "exposureWarning": "När detta slås på öppnas en separat lokal port som din tunnel publicerar på internet. Endast förfrågningar signerade med din Twilio Auth Token accepteras; resten av VoiceStudio förblir privat.",
@@ -2886,37 +2884,6 @@
     "progress": "{{done}} / {{total}} segment validerade",
     "cancelled": "Avbruten",
     "fitting": "Justerar tidsplacering"
-  },
-  "sponsorSlot": {
-    "partner_heading": "Bli partner med VoiceStudio",
-    "partner_subtitle": "Visa din produkt för dem som skapar med röst.",
-    "app_placement": "Placering i appen",
-    "integration_page": "Integrationssida",
-    "readme_exposure": "Synlighet i README",
-    "visibility": "Synlighet",
-    "integration": "Produktintegration",
-    "installs": "Direkta installationer",
-    "distribution": "Distribution för utvecklare",
-    "partner": "Verifierad partner",
-    "privacy": "Integritet",
-    "title": "Bli utvald på VoiceStudio",
-    "description": "Öka synligheten för ditt varumärke genom att sponsra en betald utvald plats.",
-    "form": "Google-formulär",
-    "email": "E-post",
-    "book": "Boka din plats",
-    "preview": "Förhandsvisning för sponsorer",
-    "footer_brand": "Bli sponsor",
-    "footer_promo": "Marknadsför ditt företag",
-    "footer_downloads": "Nedladdningar av Electron-installationsfiler",
-    "footer_views": "Visningar av GitHub-repot (14 dagar)",
-    "footer_stars": "GitHub-stjärnor",
-    "footer_stats_note": "GitHub-data kontrollerad 25 sep 2026. Nedladdningar sedan v0.5.3; visningar 10–23 sep.",
-    "footer_book": "Lägg till nu",
-    "email_template": "Hej VoiceStudio-teamet,\n\nJag vill gärna samarbeta med VoiceStudio och undersöka en framhävd placering för mitt varumärke.\n\nVarumärke / produkt:\nWebbplats:\nIntegration eller kampanj:\nMålgrupp / tidplan:\n\nKan ni dela tillgängliga paket, priser, placeringsalternativ och tekniska krav? Jag förstår att ett framhävt partnerskap kan omfatta en dokumentsida, GitHub README-logotyp, en plats i appens sidfot och en post i Integrations-katalogen.\n\nTack,\n[Namn]\n[Roll / företag]\n[Kontakt]",
-    "message": "Ditt varumärke, webbplats och meddelande",
-    "email_app": "Öppna e-postappen",
-    "copy_email": "Kopiera e-postadress",
-    "preview_detail": "Här kan din logotyp, länk och presentation visas."
   },
   "supportPlans": {
     "remove": "Ta bort sponsorfältet",
