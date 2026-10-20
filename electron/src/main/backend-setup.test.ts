@@ -589,7 +589,7 @@ it('installs into a newly selected custom destination that does not yet exist', 
   await supervisor.start();
   await supervisor.setupRuntime();
   expect(mocks.install.mock.calls[0][1]).toBe(join(selected, 'project'));
-  expect(mocks.runtimeConfig).toEqual({ root: selected, owned: true });
+  expect(mocks.runtimeConfig).toEqual({ root: selected, owned: true, scoped: false });
   await supervisor.shutdown();
 });
 
@@ -616,7 +616,7 @@ it.each([[[] as string[]], [['.DS_Store', 'desktop.ini']]])(
     await supervisor.start();
     await supervisor.setupRuntime();
     expect(mocks.install.mock.calls[0][1]).toBe(join(selected, 'project'));
-    expect(mocks.runtimeConfig).toEqual({ root: selected, owned: true });
+    expect(mocks.runtimeConfig).toEqual({ root: selected, owned: true, scoped: false });
     await supervisor.shutdown();
   },
 );

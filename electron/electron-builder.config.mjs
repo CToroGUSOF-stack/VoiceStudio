@@ -115,6 +115,12 @@ const notarizeMac =
     process.env.APPLE_TEAM_ID,
   );
 
+// electron-builder never signs ad hoc on its own when no certificate exists, so
+// the bundle keeps Electron's original signature while its contents change. That
+// signature is invalid, and quarantined downloads then fail as "damaged"
+// (#2763, #2829, #2681). Sign ad hoc explicitly when no Developer ID is supplied.
+const adhocSignMac = !isMacAppStore && !process.env.CSC_LINK;
+
 /** @type {import('electron-builder').Configuration} */
 export default {
   appId: APP_ID,
@@ -194,6 +200,7 @@ export default {
     // Keep unsigned artifact rehearsals at their existing signing defaults;
     // a Developer ID certificate and Apple credentials enable both together.
     hardenedRuntime: isMacAppStore ? false : notarizeMac,
+    ...(adhocSignMac ? { identity: '-' } : {}),
     notarize: notarizeMac,
     extendInfo: {
       NSMicrophoneUsageDescription: readFileSync(resolve(here, 'build/Info.plist'), 'utf8')

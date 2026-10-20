@@ -22,6 +22,9 @@
     "preset32": "Original",
     "sizeUnknown": "La taille sera affichée après la génération."
   },
+  "presetVoice": {
+    "label": "Voix prédéfinie"
+  },
   "audioQuality": {
     "check": "Vérifier l’audio",
     "failed": "Analyse audio indisponible.",
@@ -354,7 +357,9 @@
   },
   "referenceAsr": {
     "busy": "Transcription…",
-    "retry": "Réessayer la transcription"
+    "retry": "Réessayer la transcription",
+    "install": "Installer {{label}} ({{size}} Go) pour transcrire automatiquement",
+    "installing": "Téléchargement de {{label}}. La transcription reprendra à la fin."
   },
   "engineSidebar": {
     "tts": "TTS",
@@ -764,6 +769,9 @@
     "burn_subs_title": "Rendu des sous-titres directement dans le flux vidéo MP4 (hardsubs). Utilise le format double sous-titre lorsque les sous-titres doubles sont activés.",
     "timing_smart_fit": "Ajustement intelligent",
     "timing_smart_fit_title": "Répartit l'effort : accélère légèrement l'audio (hauteur préservée, jusqu'à 1,5×) et ralentit légèrement ce segment de la vidéo (jusqu'à 2×) pour que la voix à débit naturel tienne. Tout dépassement est coupé et signalé. L'export réencode la vidéo.",
+    "fit_speed_hint": "Limites de vitesse d'Ajustement intelligent. Des limites plus serrées gardent une voix naturelle ; des limites plus larges font tenir plus de lignes sans coupe. Les valeurs par défaut conviennent à la plupart des vidéos.",
+    "fit_max_speed": "Vitesse la plus rapide",
+    "fit_min_speed": "Vitesse la plus lente",
     "voice_match": "Correspondance de voix :",
     "voice_match_title": "Correspondance de voix — chaque ligne doublée est clonée depuis son propre extrait source, ou toutes les lignes d'un locuteur partagent une référence unique.",
     "voice_match_per_line": "Par ligne",
@@ -2044,6 +2052,7 @@
     "setup_hint": "Téléchargez Python et les dépendances de l’application (plusieurs Go). Les modèles vocaux sont installés séparément lorsque vous les choisissez.",
     "installing": "Installation…",
     "setup_space": "Libérez au moins {{gib}} Gio sur le disque de l’application, puis réessayez.",
+    "repair_failed": "La réparation automatique de l’environnement Python n’a pas abouti. Consultez le journal du moteur, puis cliquez sur Réessayer.",
     "setup_access": "Autorisez l’écriture dans le dossier de données de l’application, puis réessayez.",
     "setup_unsupported_platform": "Ce Mac Intel ne peut pas exécuter le backend IA local — PyTorch ne fournit pas de wheels macOS Intel. Connectez plutôt un backend distant ci-dessous ; aucune installation locale n'est nécessaire.",
     "setup_wrong_architecture": "Ceci est la version Intel (x64) de VoiceStudio exécutée via Rosetta sur un Mac Apple Silicon : le backend IA local ne peut donc pas s'installer. Quittez l'app, installez par-dessus le DMG Apple Silicon (arm64), puis rouvrez-la — vos voix et projets sont conservés.",
@@ -2175,7 +2184,13 @@
     "consent_revoke": "Révoquer",
     "consent_revoke_confirm": "Révoquer la vérification de la propriété vocale ? L'enregistrement du consentement sera supprimé et les fonctionnalités agents ne pourront plus utiliser cette voix.",
     "consent_revoked": "Vérification révoquée",
-    "test_text": "Bonjour, c'est un test de cette voix."
+    "test_text": "Bonjour, c'est un test de cette voix.",
+    "attest_explain": "La synchronisation cloud ne partage une voix qu’après votre confirmation que vous pouvez l’utiliser.",
+    "attest_own_voice": "C’est ma voix",
+    "attest_permission": "J’ai l’autorisation de la personne",
+    "attested_own_voice": "Confirmé : c’est ma voix",
+    "attested_permission": "Confirmé : j’ai l’autorisation de la personne",
+    "attest_clear": "Retirer la confirmation"
   },
   "nav": {
     "home": "Accueil",
@@ -2279,6 +2294,68 @@
     "no": "Non merci",
     "dismiss": "Fermer (l'analyse reste désactivée)"
   },
+  "account": {
+    "title": "Compte VoiceStudio",
+    "setup_body": "Facultatif. Connectez-vous à un compte VoiceStudio gratuit pour synchroniser vos réglages entre vos appareils. Tout fonctionne sans compte, et rien n’est envoyé tant que vous n’activez pas cette option. Vous pouvez la modifier à tout moment dans Réglages → Compte.",
+    "use_yes": "Activer les fonctions du compte",
+    "use_no": "Tout garder en local",
+    "features": "Fonctions du compte",
+    "features_desc": "Désactivé, l’app ne contacte jamais VoiceStudio Cloud.",
+    "sync": "Synchronisation cloud",
+    "sync_desc": "La désactiver arrête immédiatement toute synchronisation. Rien n’est supprimé sur cet appareil.",
+    "sign_in": "Se connecter",
+    "continue_in_browser": "Continuez dans votre navigateur…",
+    "cancel": "Annuler",
+    "sign_out": "Se déconnecter",
+    "signed_in_as": "Connecté en tant que {{name}}",
+    "signed_out_expired": "Vous avez été déconnecté. Connectez-vous pour continuer la synchronisation.",
+    "sign_in_failed": "La connexion a été annulée ou a échoué",
+    "offline": "Hors ligne : les modifications seront synchronisées plus tard",
+    "not_remembered": "Le trousseau du système est indisponible : vous devrez vous reconnecter après le redémarrage de VoiceStudio.",
+    "menu_settings": "Réglages du compte",
+    "plan": "Offre",
+    "storage": "Stockage cloud",
+    "storage_used": "{{used}} sur {{limit}} utilisés",
+    "features_title": "Votre offre comprend",
+    "feature_settings_sync": "Synchronisation des réglages entre appareils",
+    "feature_pro": "Fonctions de VoiceStudio Pro",
+    "included": "Inclus",
+    "not_included": "Hors de votre offre",
+    "plan_ends": "jusqu’au {{date}}",
+    "details_failed": "Impossible de charger les détails de votre compte ({{reason}}).",
+    "retry": "Réessayer"
+  },
+  "cloudsync": {
+    "unavailable": "La synchronisation n’est pas disponible pour le moment.",
+    "choose": "Choisir ce qui est synchronisé",
+    "settings": "Réglages",
+    "shortcuts": "Raccourcis",
+    "favorites": "Favoris de la galerie",
+    "turn_on": "Activer la synchronisation",
+    "device_revoked": "Cet appareil a été retiré de la synchronisation.",
+    "set_up_again": "Reconfigurer",
+    "account_suspended": "Votre compte est suspendu. Les fonctions locales fonctionnent toujours.",
+    "storage_full": "Le stockage cloud est plein ({{used}} / {{limit}}). Les modifications restent sur cet appareil jusqu’à ce qu’il y ait de la place.",
+    "mass_delete": "Retirer {{count}} éléments du cloud ?",
+    "confirm_remove": "Retirer",
+    "conflict": "Modifié sur un autre appareil : {{keys}}",
+    "paused": "Mis en pause par VoiceStudio",
+    "needs_update": "Mettez à jour VoiceStudio pour synchroniser {{area}}.",
+    "size": "{{size}} dans le cloud",
+    "turned_off_prompt": "Arrêter de synchroniser {{area}} sur cet appareil ?",
+    "keep_in_cloud": "Garder dans le cloud",
+    "remove_from_cloud": "Retirer aussi du cloud ({{count}} éléments, {{size}})",
+    "voices": "Voix",
+    "takes": "Prises",
+    "projects": "Projets",
+    "dub_projects": "Projets de doublage",
+    "dictation_history": "Historique de dictée",
+    "pro": "Pro",
+    "use_choices_of": "Utiliser les mêmes choix que {{device}}",
+    "devices": "Appareils",
+    "this_device": "Cet appareil",
+    "remove_device": "Retirer"
+  },
   "firstrun": {
     "stage_models": "Modèles et moteurs",
     "chip_required": "requis",
@@ -2288,6 +2365,10 @@
     "lib_show_all": "Afficher {{count}} modèles optionnels",
     "env_dir": "Environnement de l'application",
     "env_dir_desc": "Runtime Python et bibliothèques d'IA.",
+    "env_dir_desc_scoped": "Environnement Python, bibliothèques d'IA, modèles, vos données et fichiers temporaires.",
+    "storage_data": "Données",
+    "storage_models": "Modèles",
+    "storage_temp": "Fichiers temporaires",
     "change": "Modifier…",
     "reset_default": "Réinitialiser aux valeurs par défaut",
     "region_label": "Région de téléchargement"
@@ -2819,7 +2900,13 @@
     "audio_io_failed": "Impossible de lire ou d’enregistrer l’audio. Vérifiez le format du fichier, l’espace disque disponible et les autorisations. Vérifiez le dossier dans Paramètres → Stockage.",
     "no_audio_track": "Ce fichier n'a pas de piste audio : il n'y a donc aucune parole à transcrire, doubler ou cloner. Choisissez un fichier vidéo ou audio qui contient du son.",
     "transcription_media_tool": "La transcription nécessite ffmpeg, que VoiceStudio n'a pas pu trouver ou exécuter. Ouvrez Paramètres → Outils audio et utilisez Télécharger/Réparer, ou installez ffmpeg (macOS : brew install ffmpeg ; Windows : winget install Gyan.FFmpeg ; Linux : votre gestionnaire de paquets), puis redémarrez VoiceStudio. Vous pouvez aussi faire pointer FFMPEG_PATH vers un binaire ffmpeg.",
-    "transcription_pipe_lost": "Le backend a perdu son canal de sortie vers l'application pendant la transcription (broken pipe). Redémarrez VoiceStudio et réessayez."
+    "transcription_pipe_lost": "Le backend a perdu son canal de sortie vers l'application pendant la transcription (broken pipe). Redémarrez VoiceStudio et réessayez.",
+    "gpu_oom": "La mémoire du GPU est saturée. Fermez les autres applications gourmandes en GPU ou déchargez des modèles, puis réessayez. Vous pouvez aussi choisir le CPU dans Paramètres → Performances et appareil ou sélectionner un moteur TTS plus léger.",
+    "host_memory_exhausted": "L'ordinateur n'a plus de mémoire. Fermez les autres applications et onglets gourmands en mémoire, déchargez les modèles inutilisés, générez un passage plus court ou choisissez un moteur TTS plus léger.",
+    "engine_dependency_missing": "Un paquet Python requis par ce moteur n'est pas installé, le moteur n'a donc pas pu démarrer. Ouvrez le Catalogue de modèles, sélectionnez le moteur et utilisez Installer / Réparer, puis redémarrez VoiceStudio.",
+    "reference_stt_missing": "Cette voix n'a pas de transcription et aucun modèle de reconnaissance vocale n'est installé pour en créer une. Saisissez ce que dit l'extrait de référence dans la zone de transcription (extraits jusqu'à 20 secondes), ou installez un modèle de reconnaissance vocale dans le Catalogue de modèles, sélectionnez-le et générez à nouveau.",
+    "proxy_gateway_error": "Un proxy ou une passerelle entre vous et VoiceStudio a répondu HTTP {{status}} à la place du backend. Le backend est peut-être encore en cours de traitement. Augmentez le délai de lecture du proxy (pour nginx, proxy_read_timeout) pour les longues générations, puis consultez Paramètres → Journaux → Backend.",
+    "route_not_found": "Le backend VoiceStudio en cours d'exécution n'a pas le point d'accès {{route}}. Redémarrez VoiceStudio pour que l'application et le backend correspondent ; si le problème persiste, mettez les deux à jour vers la même version."
   },
   "network": {
     "copied": "Copié",

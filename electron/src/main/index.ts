@@ -22,6 +22,7 @@ import {
   observeMainProcessTask,
 } from './main-error-journal';
 import { activateLiveWindow, isLiveWindow } from './window-safety';
+import { startAccount } from './account';
 import { installAppIdentity, installMacApplicationMenu } from './app-identity';
 import { APP_ID, DEFAULT_ELECTRON_PROXY_PORT, PRODUCT_NAME } from '../../../config/app-config.mjs';
 
@@ -58,6 +59,7 @@ let closeCapture: (() => void) | null = null;
 let closeDevProxy: (() => Promise<void>) | null = null;
 let closeUpdates: (() => void) | null = null;
 let closeRepairAgents: (() => void) | null = null;
+let closeAccount: (() => void) | null = null;
 let quitPreparation: Promise<void> | null = null;
 
 const PERSISTENCE_FLUSH_REQUEST = 'app:flush-persistence';
@@ -98,6 +100,8 @@ async function tearDownNativeResources(): Promise<void> {
   closeUpdates = null;
   closeRepairAgents?.();
   closeRepairAgents = null;
+  closeAccount?.();
+  closeAccount = null;
   tray?.destroy();
   tray = null;
   const proxyTeardown = closeDevProxy?.() ?? Promise.resolve();
@@ -261,6 +265,19 @@ if (process.env.VOICESTUDIO_ALLOW_MULTIPLE_INSTANCES !== '1' && !app.requestSing
           app.exit(0);
         },
       );
+      // Before backend.start(): the backend inherits the token-bridge env.
+      closeAccount = await startAccount({
+        getMainWindow: () => mainWindow,
+        isRemoteBackend: () => backend.connection.remote,
+        notifyBackend: async (path) => {
+          if (backend.connection.remote) return;
+          await fetch(`${backend.baseUrl}${path}`, {
+            method: 'POST',
+            headers: backend.requestHeaders(),
+            signal: AbortSignal.timeout(5000),
+          });
+        },
+      });
       closeRepairAgents = await registerRepairAgents(
         backend,
         backendRoot(),

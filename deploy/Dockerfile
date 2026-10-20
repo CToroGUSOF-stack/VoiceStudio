@@ -117,8 +117,10 @@ RUN python3 -c "import os, torch, torchaudio, torchvision; \
 # cudnn8.py looks for <sys.prefix>/lib/pythonX.Y/site-packages/cudnn8_compat,
 # and sys.prefix differs between the conda-based CUDA image and the ROCm venv.
 # --no-deps keeps this to the cuDNN wheels alone, leaving the base image's torch
-# stack untouched. Skipped for ROCm, which does not use cuDNN.
-RUN if [ "$GPU_FLAVOR" = "cuda" ]; then \
+# stack untouched. Skipped for ROCm, which does not use cuDNN, and on aarch64
+# (DGX Spark / GH200 builds, #2831): NVIDIA publishes no aarch64 wheel of
+# nvidia-cudnn-cu12==8.9.7.29, so CTranslate2 ASR engines stay unavailable there.
+RUN if [ "$GPU_FLAVOR" = "cuda" ] && [ "$(uname -m)" != "aarch64" ]; then \
       target="$(python3 -c "import os, sys; print(os.path.join(sys.prefix, 'lib', 'python%d.%d' % sys.version_info[:2], 'site-packages', 'cudnn8_compat'))")" && \
       uv pip install --python "$(command -v python3)" --no-cache --no-deps \
         --target "$target" nvidia-cudnn-cu12==8.9.7.29 && \

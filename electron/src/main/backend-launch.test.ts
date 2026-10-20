@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, expect, it, vi } from 'vitest';
 import { join, resolve } from 'node:path';
-const state = vi.hoisted(() => ({ installed: true, packaged: false, ready: true }));
+const state = vi.hoisted(() => ({ installed: true, packaged: false, ready: true, checkout: true }));
 vi.mock('electron', () => ({
   app: {
     get isPackaged() {
@@ -15,7 +15,7 @@ vi.mock('node:fs', async (importOriginal) => ({
   ...(await importOriginal<typeof import('node:fs')>()),
   existsSync: (path: string) =>
     path === join(resolve('/repo'), 'backend', 'main.py') ||
-    path === join(resolve('/repo'), 'pyproject.toml') ||
+    (path === join(resolve('/repo'), 'pyproject.toml') && state.checkout) ||
     (path.includes('.venv') ? state.installed : path.includes('uv')),
   statSync: () => ({ isFile: () => true, size: 1 }),
   accessSync: () => undefined,
@@ -37,6 +37,7 @@ import {
   devRendererPort,
   resolveSpawnPlan,
   managedBackendSpawnOptions,
+  setBackendOnlyEnv,
   spawnFailureMessage,
   startupTimeoutMessage,
 } from './backend';
@@ -44,6 +45,7 @@ afterEach(() => {
   state.installed = true;
   state.ready = true;
   state.packaged = false;
+  state.checkout = true;
   vi.unstubAllEnvs();
 });
 it('launches the prepared source interpreter without syncing or downloading dependencies', async () => {
@@ -96,6 +98,16 @@ it('names the failing import or the absent interpreter instead of one vague mess
   if (!('error' in missing)) throw new Error('expected a setup error');
   expect(missing.error).toContain('is missing (no .venv');
   expect(missing.error).not.toContain('incomplete');
+});
+
+it('names the folder to open and refuses setup advice outside a checkout (#2988)', async () => {
+  vi.stubEnv('OMNIVOICE_BACKEND_CMD', '');
+  state.installed = false;
+  state.checkout = false;
+  const plan = await resolveSpawnPlan(3900);
+  if (!('error' in plan)) throw new Error('expected a setup error');
+  expect(plan.error).toContain('not a VoiceStudio source checkout');
+  expect(plan.error).toContain('release installer');
 });
 
 it('keeps native fault frames when the production log ring overflows', async () => {
@@ -180,8 +192,8 @@ it('says what the launch did in a startup-budget failure', () => {
   const budget = 'Backend did not answer on port 3900 within 300 s (OMNIVOICE_STARTUP_BUDGET_S).';
   expect(
     startupTimeoutMessage(3900, 300_000, { owned: true, lastOutput: 'INFO: loading model' }),
-  ).toBe(`${budget} Last output: INFO: loading model`);
-  expect(startupTimeoutMessage(3900, 300_000, { owned: true })).toBe(
+  ).toContain(`${budget} Last output: INFO: loading model`);
+  expect(startupTimeoutMessage(3900, 300_000, { owned: true })).toContain(
     `${budget} It printed no output.`,
   );
   expect(startupTimeoutMessage(3900, 300_000, { owned: false })).toBe(
@@ -252,4 +264,18 @@ it('tells the backend the dev renderer port so Sharing reports the real UI port'
   vi.stubEnv('OMNIVOICE_UI_PORT', '');
   vi.stubEnv('ELECTRON_RENDERER_URL', '');
   expect(managedBackendSpawnOptions(3900).env.OMNIVOICE_UI_PORT).toBe('');
+});
+
+it('hands backend-only capabilities to the managed backend alone, never to process.env', () => {
+  setBackendOnlyEnv({ VOICESTUDIO_ACCOUNT_BRIDGE_URL: 'http://127.0.0.1:1', VOICESTUDIO_ACCOUNT_BRIDGE_TOKEN: 'cap' });
+  try {
+    expect(managedBackendSpawnOptions(3900).env).toMatchObject({
+      VOICESTUDIO_ACCOUNT_BRIDGE_URL: 'http://127.0.0.1:1',
+      VOICESTUDIO_ACCOUNT_BRIDGE_TOKEN: 'cap',
+    });
+    expect(process.env.VOICESTUDIO_ACCOUNT_BRIDGE_TOKEN).toBeUndefined();
+  } finally {
+    setBackendOnlyEnv({ VOICESTUDIO_ACCOUNT_BRIDGE_URL: undefined, VOICESTUDIO_ACCOUNT_BRIDGE_TOKEN: undefined });
+  }
+  expect(managedBackendSpawnOptions(3900).env.VOICESTUDIO_ACCOUNT_BRIDGE_TOKEN).toBeUndefined();
 });

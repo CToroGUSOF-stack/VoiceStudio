@@ -71,6 +71,13 @@ running hash router and real backend. It fails on an error boundary, missing hea
 exception, console error or warning, failed load or HTTP error response. The 2026-09-13 live run passed every
 route with no failures.
 
+`bun run smoke:account-live` from `electron/` (after `bun run build`; under `xvfb-run` on Linux)
+checks VoiceStudio Cloud sign-in against the dev realm. It confirms that account features start off,
+that the top-right corner shows Sign in with the notifications bell to its right, and that sign-in
+hands the browser a PKCE authorize URL with a `127.0.0.1` redirect, which Keycloak accepts with its
+login form. It also confirms that switching account features off stops sign-in and closes the
+loopback listener at once. Finishing sign-in needs a dev test account, so that part stays manual.
+
 ## Settings navigation
 
 Studio is the default palette for both Light and Dark on a fresh install. Selecting a palette under either appearance applies it immediately and saves it for later switches, including System mode changes. Existing saved palette choices remain unchanged.
