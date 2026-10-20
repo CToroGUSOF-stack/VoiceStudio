@@ -20,6 +20,7 @@ metadata and the backend fallback mirror it.
 ### Fixed
 
 - Engine sidecars no longer load PyTorch just to answer the Test Engine ping, and a failed test logs its reason locally (#3026) — thanks @tekay-de!
+- `bun run start` and `bun run desktop-prod` open a fresh checkout, and source launches started from VS Code no longer crash on startup (#2923)
 
 ### Fixed
 
