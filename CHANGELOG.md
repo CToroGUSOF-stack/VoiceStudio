@@ -36,6 +36,10 @@ metadata and the backend fallback mirror it.
 
 - The installed app now rebuilds a Python environment that antivirus or disk cleanup removed, once per launch with the usual setup progress, instead of stopping at a setup error; your voices and projects are untouched (#3032) — thanks @afraniohugo and @javalovelinux-cmd!
 
+### Fixed
+
+- The day of a date written with an ordinal period ("am 3. Mai", "den 17. mai", "3. května") keeps its digits in German, Danish, Norwegian, Finnish, Czech and Polish instead of becoming a cardinal with a stray sentence break ("drei. Mai") (#3040) — thanks @NishchayMahor!
+
 ### Docs
 
 - OmniVoice GGUF docs state that the installers do not ship its native binary yet (#3026) — thanks @DestinyQJY!
