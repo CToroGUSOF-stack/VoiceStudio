@@ -37,6 +37,10 @@ metadata and the backend fallback mirror it.
 
 - The installed app now rebuilds a Python environment that antivirus or disk cleanup removed, once per launch with the usual setup progress, instead of stopping at a setup error; your voices and projects are untouched (#3032) — thanks @afraniohugo and @javalovelinux-cmd!
 
+### Changed
+
+- Optional Vulkan builds for OmniVoice GGUF on Windows and Linux, with CPU fallback, native device overrides, and conservative generation deadlines (#3042) — thanks @dutch2005!
+
 ### Docs
 
 - OmniVoice GGUF docs state that the installers do not ship its native binary yet (#3026) — thanks @DestinyQJY!
