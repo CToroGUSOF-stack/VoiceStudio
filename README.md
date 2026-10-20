@@ -95,6 +95,7 @@ Or download from [Releases](https://github.com/debpalash/VoiceStudio/releases/la
 | Hardware | Support |
 |---|---|
 | NVIDIA GPU (Windows / Linux) | CUDA acceleration |
+| AMD Radeon (Windows) | CPU PyTorch; Vulkan engines can use the GPU. [Windows ROCm limits and diagnostics](docs/install/windows.md#gpu-support) |
 | Apple Silicon | Metal (MPS) acceleration |
 | No dedicated GPU (Intel/AMD integrated graphics, older PCs) | Fully usable on the CPU, slower; setup installs the small CPU build of PyTorch (about 5 GB free disk) |
 | Windows on ARM (Snapdragon X etc.) | **Experimental**, validation pending: native ARM64 app, x64 Python backend under emulation, CPU only |

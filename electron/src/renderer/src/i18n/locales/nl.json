@@ -1410,7 +1410,6 @@
     "gpu_report_state_unknown": "De GPU-status kon niet worden bepaald.",
     "gpu_report_option_vulkan_engines": "Gebruik een engine met een eigen GPU-runtime: audio.cpp draait via Vulkan op AMD Radeon-GPU's (Instellingen → Modellen → runtime installeren).",
     "gpu_report_option_rocm_windows_manual": "VoiceStudio installeert PyTorch met ROCm niet op Windows. AMD publiceert aparte wheels voor recente Radeon-kaarten, maar die vereisen een nieuwere PyTorch dan waarmee de engines hier zijn getest, en sommige engines werken dan niet meer. Probeer het alleen als u problemen zelf kunt oplossen (zie de Windows-installatiegids).",
-    "gpu_report_option_rocm_windows_opt_in": "Stel OMNIVOICE_TORCH_VARIANT=rocm in en voer de installatie opnieuw uit om de ROCm-build van PyTorch voor Windows te installeren (vereist AMD HIP SDK en RDNA 3/3.5 GPU).",
     "gpu_report_option_rocm_variant_linux": "Stel OMNIVOICE_TORCH_VARIANT=rocm in en voer de installatie opnieuw uit om de ROCm-build van PyTorch te installeren.",
     "gpu_report_option_rocm_device_access": "Controleer of het amdgpu-stuurprogramma is geladen en uw gebruiker /dev/kfd kan openen (groepen render en video).",
     "gpu_report_option_reinstall_cuda_torch": "Installeer de runtime opnieuw zodat de CUDA-build van PyTorch wordt geïnstalleerd.",

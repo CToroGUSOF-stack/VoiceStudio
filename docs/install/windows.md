@@ -121,19 +121,27 @@ still works on CPU, just slower. What you can do today:
   automatically.
 - **Run on Linux** (native, or the ROCm Docker image) for ROCm acceleration of
   the PyTorch engines — see [linux.md — AMD GPU (ROCm)](linux.md#amd-gpu-rocm).
-- **Advanced / unsupported: AMD's own Windows ROCm wheels.** AMD publishes
-  PyTorch ROCm wheels for Windows (`https://repo.amd.com/rocm/whl-multi-arch/`,
-  Python 3.11–3.14, RDNA 3 / RDNA 4 cards such as the RX 7000 and RX 9000 series).
-  They are PyTorch 2.9 or newer, not the 2.8 the engines here are validated
-  against, and faster-whisper (CTranslate2) needs its own separate HIP build for
-  the GPU, so expect parts of the app (WhisperX is a reported example) to break. VoiceStudio does not install them, and no engine
-  parity is claimed. DirectML is not an option either: `torch-directml` needs
-  PyTorch 2.4.
+- **Advanced / unsupported: AMD's own Windows ROCm wheels.** Follow AMD's
+  [Windows installation guide](https://rocm.docs.amd.com/projects/radeon-ryzen/en/docs-7.1.1/docs/install/installrad/windows/install-pytorch.html)
+  and [supported-device matrix](https://rocm.docs.amd.com/projects/radeon-ryzen/en/docs-7.1.1/docs/compatibility/compatibilityrad/windows/windows_compatibility.html)
+  for a matched Python, wheel and graphics-driver release. That recipe uses
+  Python 3.12 and PyTorch 2.9, whereas VoiceStudio's managed runtime uses Python
+  3.11 and PyTorch 2.8. HIP SDK 6.1 alone is insufficient. Faster-whisper
+  (CTranslate2) also needs a separate HIP build; WhisperX/pyannote can break
+  with newer torchaudio. VoiceStudio does not install those wheels and claims
+  no engine parity. Native provisioning remains tracked in
+  [#2468](https://github.com/debpalash/VoiceStudio/issues/2468), with focused work
+  in [#2600](https://github.com/debpalash/VoiceStudio/pull/2600) and
+  [#2607](https://github.com/debpalash/VoiceStudio/pull/2607).
+  DirectML is not an option either: `torch-directml` needs PyTorch 2.4.
 
 **Settings → Performance → GPU acceleration** shows exactly what applies to your
 machine: the GPUs Windows reports, which PyTorch build is installed, and a
 verdict for every engine (uses the GPU, runs on the CPU and why, or CPU by
-design). **Settings → About → Run self-check** names the card instead of just
+design). Manually installed HIP sidecars are recognized in Windows virtual
+environments too. If HIP cannot enumerate a GPU, diagnostics point to AMD's
+supported GPU, driver and wheel combination; an SDK directory on PATH alone
+does not prove a working PyTorch runtime. **Settings → About → Run self-check** names the card instead of just
 saying "no GPU acceleration detected".
 
 ## Building from source

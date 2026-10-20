@@ -267,7 +267,7 @@ def _rocm_index_url() -> Optional[str]:
     warning on other platforms — a sidecar install must not hard-fail where
     the main venv quietly keeps its default torch.
     """
-    if sys.platform not in ("linux", "win32"):
+    if sys.platform != "linux":
         return None
     variant = os.environ.get("OMNIVOICE_TORCH_VARIANT", "").strip().lower()
     if _host_family() == "rocm" or variant == "rocm":

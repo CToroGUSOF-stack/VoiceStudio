@@ -138,9 +138,6 @@ describe('resolveTorchVariant', () => {
     expect(resolveTorchVariant({ OMNIVOICE_TORCH_VARIANT: 'rocm' }, 'linux', 'x64', noGpu)).toEqual(
       { variant: 'rocm', explicit: true },
     );
-    expect(resolveTorchVariant({ OMNIVOICE_TORCH_VARIANT: 'rocm' }, 'win32', 'x64', noGpu)).toEqual(
-      { variant: 'rocm', explicit: true },
-    );
   });
   it('ignores an explicit cpu request where the lock already ships CPU/MPS wheels', () => {
     expect(

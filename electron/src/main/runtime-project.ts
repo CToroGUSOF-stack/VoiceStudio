@@ -43,7 +43,7 @@ export const ROCM_TORCH_PINS = [
  * deliberately not wired into this recipe.
  */
 export function rocmTorchApplies(platform: NodeJS.Platform = process.platform): boolean {
-  return platform !== 'darwin';
+  return platform !== 'win32' && platform !== 'darwin';
 }
 /** The user explicitly asked for ROCm torch AND this OS can have it. */
 export function rocmTorchOptIn(platform: NodeJS.Platform = process.platform): boolean {

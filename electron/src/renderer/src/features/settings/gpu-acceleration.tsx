@@ -44,7 +44,6 @@ const STATES = new Set([
 ]);
 const OPTIONS = new Set([
   'vulkan_engines',
-  'rocm_windows_opt_in',
   'rocm_windows_manual',
   'rocm_variant_linux',
   'rocm_device_access',
