@@ -9,8 +9,8 @@ metadata and the backend fallback mirror it.
 ## [Unreleased]
 
 **Highlights**
-
 - Preview iOS and Android companion apps for your own VoiceStudio
+- Voice cloning on 8 GB unified-memory Macs frees the reference speech model before synthesis, so cloning no longer swaps until it times out (#2619)
 
 ### Added
 
@@ -20,6 +20,9 @@ metadata and the backend fallback mirror it.
 ### Fixed
 
 - Engine sidecars no longer load PyTorch just to answer the Test Engine ping, and a failed test logs its reason locally (#3026) — thanks @tekay-de!
+- Voice cloning on 8 GB unified-memory Macs frees the reference speech model before synthesis, so cloning no longer swaps until it times out (#2619)
+- Voice-clone references without a transcript are encoded once per engine process and logged without their spoken text (#2619)
+- Reference passages trim leading and trailing silence before selection, so clones no longer start or end mid-pause (#2619)
 
 ### Fixed
 
