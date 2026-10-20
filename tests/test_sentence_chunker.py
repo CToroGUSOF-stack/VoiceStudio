@@ -79,3 +79,12 @@ def test_short_flush_ends_the_first_flush_window():
     clause = "However, the remaining answer keeps going for quite a while, and then"
     assert chunker.push(clause) == []
     assert chunker.flush() == [clause]
+
+
+def test_space_before_split_point_survives_into_next_push():
+    # The telephony reply parser holds back a trailing word that could start
+    # "ACTION:", so a push can end in a space; the next word must not be glued on.
+    assert _run_case(["Hello there my good friend. How are ", "you today?"]) == [
+        "Hello there my good friend.",
+        "How are you today?",
+    ]

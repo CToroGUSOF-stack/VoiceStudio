@@ -392,8 +392,12 @@ class SentenceChunker:
             if sent_text.strip():
                 result.append(sent_text.strip())
 
-        # Keep the last (potentially incomplete) sentence in the buffer
+        # Keep the last (potentially incomplete) sentence in the buffer.
+        # Splitting strips it, so restore a trailing space: the next token
+        # may start a new word ("How are " + "you").
         last_text = sentences[-1][0] if sentences else ""
+        if last_text and self._buffer[-1:].isspace():
+            last_text += " "
         self._buffer = last_text
 
         if result:
