@@ -37,6 +37,10 @@ metadata and the backend fallback mirror it.
 
 - The installed app now rebuilds a Python environment that antivirus or disk cleanup removed, once per launch with the usual setup progress, instead of stopping at a setup error; your voices and projects are untouched (#3032) — thanks @afraniohugo and @javalovelinux-cmd!
 
+### Fixed
+
+- English text reads pound and euro prices as money: "£5.50" is spoken "five pounds, fifty pence" instead of "£five point five", and numbers touching another currency symbol keep their digits instead of becoming "€zwanzig" or "trois€" (#2990)
+
 ### Docs
 
 - OmniVoice GGUF docs state that the installers do not ship its native binary yet (#3026) — thanks @DestinyQJY!
