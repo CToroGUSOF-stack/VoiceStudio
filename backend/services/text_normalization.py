@@ -453,6 +453,12 @@ def _compile_abbreviations() -> dict[str, tuple[re.Pattern, dict[str, str]]]:
 
 _ABBREV_COMPILED = _compile_abbreviations()
 
+# List-closing abbreviations whose dot often doubles as the sentence's full
+# stop ("…, stoves, etc. Then we left."). Expanding them must keep that stop,
+# or two sentences run together into one ("et cetera Then we left").
+_SENTENCE_FINAL_ABBREVIATIONS = frozenset({"etc.", "usw."})
+_NEXT_SENTENCE_RE = re.compile(r"\s*(?:$|\n|[A-ZÀ-ÖØ-Þ])")
+
 
 def _expand_abbreviations(text: str, lang: str) -> str:
     entry = _ABBREV_COMPILED.get(lang)
@@ -461,7 +467,11 @@ def _expand_abbreviations(text: str, lang: str) -> str:
     pattern, lookup = entry
 
     def _repl(m: re.Match) -> str:
-        return lookup.get(m.group(0), m.group(0))
+        expansion = lookup.get(m.group(0), m.group(0))
+        if (m.group(0).lower() in _SENTENCE_FINAL_ABBREVIATIONS
+                and _NEXT_SENTENCE_RE.match(m.string, m.end())):
+            return expansion + "."
+        return expansion
 
     return pattern.sub(_repl, text)
 
