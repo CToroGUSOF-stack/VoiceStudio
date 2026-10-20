@@ -19,7 +19,6 @@ import os
 import shutil
 import sys
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger("omnivoice.whisper_cpp.bootstrap")
 
@@ -43,13 +42,21 @@ _PKG_MODELS_DIR = _PKG_DIR / "models"
 
 #: Candidate binary names
 _CANDIDATE_NAMES = (
-    ("whisper-cli.exe", "whisper-server.exe", "main.exe", "server.exe", "whisper.exe")
+    ("whisper-cli.exe", "main.exe")
     if sys.platform == "win32"
-    else ("whisper-cli", "whisper-server", "main", "server", "whisper")
+    else ("whisper-cli", "main")
 )
 
 
-def locate_binary() -> Optional[Path]:
+def _usable_binary(path: Path) -> bool:
+    return (
+        path.is_file()
+        and path.stem.lower() not in ("whisper-server", "server", "whisper")
+        and (sys.platform == "win32" or os.access(path, os.X_OK))
+    )
+
+
+def locate_binary() -> Path | None:
     """Find a usable whisper.cpp binary.
 
     Returns the absolute Path if found, otherwise None.
@@ -58,9 +65,9 @@ def locate_binary() -> Optional[Path]:
     direct = os.environ.get(BIN_ENV, "").strip()
     if direct:
         cand = Path(direct)
-        if cand.is_file():
+        if _usable_binary(cand):
             return cand.resolve()
-        logger.warning("%s points to non-existent file: %s", BIN_ENV, direct)
+        logger.warning("%s points to a missing executable", BIN_ENV)
 
     # 2. Directory override
     dir_env = os.environ.get(DIR_ENV, "").strip()
@@ -69,18 +76,18 @@ def locate_binary() -> Optional[Path]:
         if dir_path.is_dir():
             for name in _CANDIDATE_NAMES:
                 cand = dir_path / name
-                if cand.is_file():
+                if _usable_binary(cand):
                     return cand.resolve()
 
     # 3. Package-owned binary directory
     if _PKG_BIN_DIR.is_dir():
         for name in _CANDIDATE_NAMES:
             cand = _PKG_BIN_DIR / name
-            if cand.is_file():
+            if _usable_binary(cand):
                 return cand.resolve()
 
     # 4. System PATH
-    for name in _CANDIDATE_NAMES:
+    for name in _CANDIDATE_NAMES[:1]:
         found = shutil.which(name)
         if found:
             return Path(found).resolve()
@@ -88,7 +95,7 @@ def locate_binary() -> Optional[Path]:
     return None
 
 
-def resolve_model(model_name: Optional[str] = None) -> Optional[Path]:
+def resolve_model(model_name: str | None = None) -> Path | None:
     """Resolve the path to a GGML/GGUF Whisper model file.
 
     Checks:
@@ -123,8 +130,8 @@ def resolve_model(model_name: Optional[str] = None) -> Optional[Path]:
         hf_cached = try_to_load_from_cache(HF_MODEL_REPO, filename)
         if hf_cached and isinstance(hf_cached, (str, Path)) and Path(hf_cached).is_file():
             return Path(hf_cached).resolve()
-    except (ImportError, Exception):  # noqa: BLE001
-        pass
+    except Exception:  # noqa: BLE001
+        logger.debug("No local whisper.cpp HF cache entry")
 
     return None
 

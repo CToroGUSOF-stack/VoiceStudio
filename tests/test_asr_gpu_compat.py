@@ -28,7 +28,7 @@ _EXPECTED = {
     # Crash-isolated sidecar wraps the same CTranslate2 engine as
     # faster-whisper — same device support (#730 residual B).
     "faster-whisper-isolated": ("cuda", "cpu"),
-    "whisper-cpp": ("vulkan", "cuda", "cpu"),
+    "whisper-cpp": ("vulkan", "cuda", "mps", "cpu"),
 }
 
 # Engines that legitimately have NO cpu path (hard platform/GPU gate in

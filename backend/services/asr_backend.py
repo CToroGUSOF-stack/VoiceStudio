@@ -2743,7 +2743,7 @@ _INSTALL_HINTS: dict[str, str] = {
     "faster-whisper":  "pip install faster-whisper  (CTranslate2; cross-platform, CUDA or CPU)",
     "mlx-whisper":     "pip install mlx-whisper  (Apple Silicon only)",
     "pytorch-whisper": "Bundled with transformers — no extra install (CUDA/MPS/CPU)",
-    "whisper-cpp":     "Place whisper-cli or whisper-server in backend/engines/whisper_cpp/bin/ (Vulkan/CUDA/CPU)",
+    "whisper-cpp":     "Place whisper-cli in backend/engines/whisper_cpp/bin/ (Vulkan/CUDA/CPU)",
     "nemo-parakeet":   (
         "No safe install path in this app yet — nemo_toolkit's ASR extras pin "
         "transformers>=4.57,<4.58, which conflicts with VoiceStudio's own "
@@ -2827,7 +2827,7 @@ def list_backends() -> list[dict]:
     from core.device_caps import detect_host_caps
     from core.scrub import scrub_text
     from services.engine_evidence import snapshot as execution_snapshot
-    from services.engine_routing import routing_fields
+    from services.engine_routing import runtime_compute_profile
     caps = detect_host_caps()
 
     out: list[dict] = []
@@ -2851,7 +2851,8 @@ def list_backends() -> list[dict]:
             _LAST_ERRORS[bid] = scrub_text(msg)
         isolation = "subprocess" if getattr(cls, "_is_subprocess_isolated", False) else "in-process"
         gpu_compat = getattr(cls, "gpu_compat", ("cpu",))
-        routing = routing_fields(gpu_compat, caps)
+        routing = runtime_compute_profile(cls, caps)
+        routing["routing_reason"] = scrub_text(routing["routing_reason"]) if routing["routing_reason"] else None
         # Cached load-time facts are valid only while their exact backend still
         # owns live model state. Recompute from that instance so unload/reaping
         # cannot leave ghost GPU/provider evidence in diagnostics.
@@ -2984,23 +2985,6 @@ def _ctranslate2_cuda_ok() -> bool:
     )
 
 
-def _vulkan_preferred() -> bool:
-    """True when the host has a Vulkan-capable GPU but no usable CUDA device.
-
-    On such hosts, whisperx/faster-whisper run on the CPU (no HIP/Vulkan in CTranslate2),
-    while whisper-cpp can use the GPU through its Vulkan backend.
-    """
-    if _cuda_reported_available() and not _rocm_torch():
-        return False
-    try:
-        from core.device_caps import detect_host_caps, VULKAN_MARKER
-
-        caps = detect_host_caps()
-        return any(VULKAN_MARKER in note for note in caps.notes)
-    except Exception:  # noqa: BLE001
-        return False
-
-
 def _auto_detect() -> str:
     """Pick the best available ASR engine **for this hardware**.
 
@@ -3040,14 +3024,6 @@ def _auto_detect() -> str:
     # so it genuinely uses the HIP GPU there.
     if _rocm_torch() and _cuda_reported_available() and _probe_available(PyTorchWhisperBackend):
         return "pytorch-whisper"
-    # Vulkan-native ASR for AMD GPUs without CUDA (Phase 3)
-    if _vulkan_preferred():
-        try:
-            whisper_cpp_cls = _REGISTRY["whisper-cpp"]
-            if _probe_available(whisper_cpp_cls):
-                return "whisper-cpp"
-        except Exception:  # noqa: BLE001
-            pass
     if _probe_available(WhisperXBackend):
         return "whisperx"
     if _probe_available(FasterWhisperBackend):
@@ -3251,11 +3227,12 @@ def load_active_asr_backend(
             backend.ensure_loaded()
             from core.device_caps import detect_host_caps
             from services.engine_evidence import snapshot as execution_snapshot
-            from services.engine_routing import routing_fields
+            from services.engine_routing import runtime_compute_profile
 
             cls = type(backend)
             caps = detect_host_caps()
-            routing = routing_fields(getattr(cls, "gpu_compat", ("cpu",)), caps)
+            routing = runtime_compute_profile(cls, caps)
+            routing["routing_reason"] = scrub_text(routing["routing_reason"]) if routing["routing_reason"] else None
             _RUNTIME_EVIDENCE[bid] = execution_snapshot(
                 engine_id=bid,
                 engine_cls=cls,
@@ -4040,8 +4017,8 @@ def _offline_asr_repo(backend_id: str | None = None) -> str | None:
     if bid == "pytorch-whisper":
         return os.environ.get("OMNIVOICE_PYTORCH_ASR_MODEL", _PYTORCH_ASR_DEFAULT)
     if bid == "whisper-cpp":
-        from engines.whisper_cpp.bootstrap import HF_MODEL_REPO, MODEL_ENV
-        return os.environ.get(MODEL_ENV) or HF_MODEL_REPO
+        from engines.whisper_cpp.bootstrap import HF_MODEL_REPO
+        return HF_MODEL_REPO
     return None
 
 
@@ -4181,6 +4158,12 @@ def asr_model_missing_error(*, purpose: str = "transcribe",
     a broken preflight must degrade to the old behaviour, not block ASR.
     """
     try:
+        if purpose != "dictation" and (backend_id or active_backend_id()) == "whisper-cpp":
+            from engines.whisper_cpp.bootstrap import resolve_model
+            if resolve_model() is not None:
+                return None
+            return {"error": ASR_MODEL_MISSING, "missing_repo_id": "whisper-cpp-local-model",
+                    "reason": "manual_install", "recommended": None}
         prefer_sherpa_recommendation = not skip_sherpa
         excluded_sherpa_model_id = None
         if purpose == "dictation":
@@ -4260,6 +4243,9 @@ def asr_model_missing_error(*, purpose: str = "transcribe",
 def asr_model_missing_detail(payload: dict) -> str:
     """Human-readable (English) fallback message for the typed payload —
     what legacy clients / logs see; the frontend renders its own i18n copy."""
+    if payload.get("reason") == "manual_install":
+        return ("whisper.cpp needs a local GGML model. Set OMNIVOICE_WHISPER_CPP_MODEL "
+                "to its file path; see the whisper.cpp setup guide in README.md.")
     if payload.get("reason") == "verification_failed":
         return ("Could not verify the local speech-to-text model. "
                 "Check Settings > Logs > Backend, then retry. No model was downloaded.")
