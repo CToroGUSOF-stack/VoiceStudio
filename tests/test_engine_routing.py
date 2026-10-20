@@ -9,13 +9,7 @@ from __future__ import annotations
 import asyncio
 import threading
 
-from core.device_caps import (
-    DIRECTML_MARKER,
-    KERNEL_RISK_MARKER,
-    UNUSABLE_GPU_MARKER,
-    VULKAN_MARKER,
-    HostCaps,
-)
+from core.device_caps import DIRECTML_MARKER, KERNEL_RISK_MARKER, HostCaps
 from services.engine_routing import (
     header_safe_reason,
     resolve_routing,
@@ -251,34 +245,3 @@ def test_npu_compatible_engine_uses_accelerated_route():
     assert resolve_routing(("npu", "cpu"), _caps("npu")) == {
         "effective_device": "npu", "routing_status": "accelerated", "routing_reason": None,
     }
-
-
-def test_vulkan_compatible_engine_accelerated_on_cpu_host_with_vulkan_runtime():
-    caps = _caps("cpu", notes=[f"{VULKAN_MARKER}; Vulkan-native engines can use the GPU"])
-    r = resolve_routing(("cuda", "vulkan", "mps", "cpu"), caps)
-    assert r == {
-        "effective_device": "vulkan",
-        "routing_status": "accelerated",
-        "routing_reason": None,
-    }
-
-
-def test_vulkan_compatible_engine_accelerated_on_amd_windows_host():
-    note = f"AMD Radeon RX 7900 XT (AMD) {UNUSABLE_GPU_MARKER}: this is a CUDA build"
-    caps = _caps("cpu", notes=[note, f"{VULKAN_MARKER}; Vulkan-native engines can use the GPU"])
-    r = resolve_routing(("cuda", "vulkan", "mps", "cpu"), caps)
-    assert r["routing_status"] == "accelerated"
-    assert r["effective_device"] == "vulkan"
-
-
-def test_vulkan_engine_pinned_cpu_does_not_route_to_vulkan():
-    caps = HostCaps(
-        family="cpu",
-        available_families=("cpu",),
-        requested_family="cpu",
-        notes=(f"{VULKAN_MARKER}; Vulkan-native engines can use the GPU",),
-    )
-    r = resolve_routing(("cuda", "vulkan", "mps", "cpu"), caps)
-    assert r["effective_device"] == "cpu"
-    assert r["routing_status"] == "cpu_only"
-

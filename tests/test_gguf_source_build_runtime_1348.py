@@ -162,6 +162,7 @@ def _run_linux_arm_build(
     scripts = checkout / "scripts"
     scripts.mkdir(parents=True)
     shutil.copy2(REPO / "scripts/build-omnivoice-tts.sh", scripts)
+    shutil.copytree(REPO / "scripts/lib", scripts / "lib")
 
     fake_bin = tmp_path / "fake-bin"
     fake_bin.mkdir()
@@ -300,7 +301,7 @@ def test_build_script_copies_shared_libs_on_every_platform_branch():
     build_case = script.rsplit('case "$PLATFORM" in', 1)[1].split("\nesac", 1)[0]
     branches = dict(
         re.findall(
-            r"(?ms)^    ([a-z0-9_-]+)\)\n(.*?)(?=^    [a-z0-9_-]+\)\n|\Z)",
+            r"(?ms)^    ([a-z0-9_|-]+)\)\n(.*?)(?=^    [a-z0-9_|-]+\)\n|\Z)",
             build_case,
         )
     )
@@ -311,7 +312,8 @@ def test_build_script_copies_shared_libs_on_every_platform_branch():
         "darwin-x86_64",
         "darwin-arm64",
     ):
-        branch = branches[platform]
+        branch = next(body for names, body in branches.items()
+                      if platform in names.split("|"))
         copies = list(
             re.finditer(
                 r'cp -v build/(?:Release/)?omnivoice-tts(?:\.exe)? "\$BIN_DIR',

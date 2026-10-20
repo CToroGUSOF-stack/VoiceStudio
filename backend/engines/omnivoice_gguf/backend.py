@@ -61,6 +61,8 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
+from .compute import BACKEND_ENV as BACKEND_ENV, DEVICE_ENV as DEVICE_ENV
+
 logger = logging.getLogger("omnivoice.gguf")
 
 #: Path to the ``backend/engines/omnivoice_gguf/`` directory. Used as the
@@ -80,10 +82,6 @@ _HF_REPO_ID = "Serveurperso/OmniVoice-GGUF"
 #: reaches the logger.
 _HF_TOKEN_RE = re.compile(r"hf_[A-Za-z0-9]{30,}")
 _HF_TOKEN_MASK = "hf_***REDACTED***"
-
-#: Optional overrides for compute backend and device index.
-BACKEND_ENV = "OMNIVOICE_GGUF_BACKEND"
-DEVICE_ENV = "OMNIVOICE_GGUF_DEVICE"
 
 
 def _mask_token(s: str) -> str:
@@ -166,7 +164,8 @@ def _spawn_env() -> dict[str, str]:
     for var in ("LD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH"):
         prev = env.get(var)
         env[var] = bin_dir if not prev else bin_dir + os.pathsep + prev
-    return env
+    from .compute import apply_compute_env
+    return apply_compute_env(env)
 
 
 def _binary_repair_hint() -> str:
@@ -387,6 +386,7 @@ def _make_backend_class():
         display_name = "OmniVoice (GGUF, hardware-adaptive)"
         instruct_vocabulary = "tags"
         gpu_compat = ("cuda", "vulkan", "mps", "cpu")
+
         supports_voice_design = False
         # Every generate() spawns the external binary — allocations live in
         # that process, invisible to parent-side accelerator counters.
@@ -397,6 +397,12 @@ def _make_backend_class():
 
         # Quick probe at startup to confirm the binary spawns at all.
         _PROBE_TIMEOUT_S = 5.0
+
+        @classmethod
+        def runtime_compute_profile(cls, caps) -> dict:
+            """Keep budgets conservative until the native device is verified."""
+            from .compute import runtime_profile
+            return runtime_profile(cls, caps)
 
         def __init__(self, quant_override: Optional[str] = None):
             """Construct without spawning the binary.
@@ -734,12 +740,6 @@ def _make_backend_class():
                 "--codec", str(tokenizer),
                 "-o", str(out_path),
             ]
-            backend_override = os.environ.get(BACKEND_ENV, "").strip()
-            if backend_override:
-                argv += ["--backend", backend_override]
-            device_override = os.environ.get(DEVICE_ENV, "").strip()
-            if device_override:
-                argv += ["--device", device_override]
             lang = _iso_to_omnivoice_lang(language)
             if lang:
                 argv += ["--lang", lang]

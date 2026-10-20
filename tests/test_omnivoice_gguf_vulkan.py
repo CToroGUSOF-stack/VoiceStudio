@@ -1,62 +1,96 @@
-"""Tests for OmniVoice GGUF Vulkan support and device overrides (Phase 1)."""
-from __future__ import annotations
-
-import types
+"""Regression coverage for the pinned GGUF runtime's compute contract (#3042)."""
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
-from core.device_caps import HostCaps, UNUSABLE_GPU_MARKER, VULKAN_MARKER
-from engines.omnivoice_gguf.backend import (
-    BACKEND_ENV,
-    DEVICE_ENV,
-    OmniVoiceGGUFBackend,
-)
-from services.engine_routing import resolve_routing
+from core.device_caps import HostCaps
+from engines.omnivoice_gguf import backend as gguf
+from services.engine_routing import resolve_routing, runtime_compute_profile
 
 
-def test_omnivoice_gguf_declares_vulkan():
-    assert "vulkan" in OmniVoiceGGUFBackend.gpu_compat
-    assert OmniVoiceGGUFBackend.gpu_compat == ("cuda", "vulkan", "mps", "cpu")
+def test_loader_presence_does_not_prove_engine_acceleration():
+    caps = HostCaps(family="cpu", available_families=("cpu",),
+                    notes=("Vulkan runtime present",))
+    result = resolve_routing(("cuda", "vulkan", "mps", "cpu"), caps)
+    assert result["effective_device"] == "cpu"
 
 
-def test_compose_argv_passes_backend_and_device_overrides(monkeypatch, tmp_path):
-    monkeypatch.setenv(BACKEND_ENV, "vulkan")
-    monkeypatch.setenv(DEVICE_ENV, "1")
-
-    backend = OmniVoiceGGUFBackend()
-    fake_bin = tmp_path / "omnivoice-tts"
-    fake_bin.touch()
-    fake_model = tmp_path / "model.gguf"
-    fake_model.touch()
-    fake_codec = tmp_path / "codec.gguf"
-    fake_codec.touch()
-    out_wav = tmp_path / "out.wav"
-
-    with patch("engines.omnivoice_gguf.backend._binary_path", return_value=fake_bin):
-        argv = backend._build_argv(
-            base=fake_model,
-            tokenizer=fake_codec,
-            out_path=out_wav,
-            ref_audio=None,
-            ref_text=None,
-            language="en",
-        )
-
-    assert "--backend" in argv
-    assert argv[argv.index("--backend") + 1] == "vulkan"
-    assert "--device" in argv
-    assert argv[argv.index("--device") + 1] == "1"
+def test_pinned_cli_does_not_receive_unsupported_compute_flags(monkeypatch, tmp_path):
+    monkeypatch.setenv(gguf.BACKEND_ENV, "vulkan")
+    monkeypatch.setenv(gguf.DEVICE_ENV, "1")
+    with patch.object(gguf, "_binary_path", return_value=tmp_path / "tts"):
+        argv = gguf.OmniVoiceGGUFBackend()._build_argv(
+            base=Path("model.gguf"), tokenizer=Path("codec.gguf"),
+            out_path=Path("out.wav"), ref_audio=None, ref_text=None, language="en")
+    assert "--backend" not in argv
+    assert "--device" not in argv
 
 
-def test_omnivoice_gguf_routes_to_vulkan_on_amd_windows_host():
-    note = f"AMD Radeon RX 7900 XT (AMD) {UNUSABLE_GPU_MARKER}: this is a CUDA build"
-    caps = HostCaps(
-        family="cpu",
-        available_families=("cpu",),
-        notes=(note, f"{VULKAN_MARKER}; Vulkan-native engines can use the GPU"),
-    )
-    result = resolve_routing(OmniVoiceGGUFBackend.gpu_compat, caps)
-    assert result["routing_status"] == "accelerated"
-    assert result["effective_device"] == "vulkan"
+@pytest.mark.parametrize("backend,index,expected", [
+    ("vulkan", "1", "Vulkan1"), ("cuda", "0", "CUDA0"), ("cpu", "", "CPU"),
+])
+def test_overrides_use_pinned_runtime_environment(monkeypatch, backend, index, expected):
+    monkeypatch.setenv(gguf.BACKEND_ENV, backend)
+    monkeypatch.setenv(gguf.DEVICE_ENV, index)
+    monkeypatch.setenv("OMNIVOICE_DEVICE", "auto")
+    assert gguf._spawn_env()["GGML_BACKEND"] == expected
+
+
+def test_global_cpu_pin_reaches_native_subprocess(monkeypatch):
+    monkeypatch.setenv("OMNIVOICE_DEVICE", "cpu")
+    monkeypatch.setenv(gguf.BACKEND_ENV, "vulkan")
+    monkeypatch.setenv("GGML_BACKEND", "Vulkan0")
+    assert gguf._spawn_env()["GGML_BACKEND"] == "CPU"
+
+
+def test_unverified_native_device_keeps_cpu_timeout_budget(monkeypatch):
+    monkeypatch.setenv(gguf.BACKEND_ENV, "vulkan")
+    caps = HostCaps(family="cuda", available_families=("cuda", "cpu"))
+    profile = runtime_compute_profile(gguf.OmniVoiceGGUFBackend, caps)
+    assert profile["effective_device"] == "cpu"
+    assert profile["runtime_device_verified"] is False
+
+
+@pytest.mark.parametrize("backend,index", [
+    ("vulkan", "-1"), ("vulkan", "1.5"), ("vulkan", "١"),
+    ("cpu", "1"), ("unknown", "0"), ("", "1"),
+])
+def test_invalid_device_overrides_fail_clearly(monkeypatch, backend, index):
+    monkeypatch.setenv("OMNIVOICE_DEVICE", "auto")
+    monkeypatch.setenv(gguf.BACKEND_ENV, backend)
+    monkeypatch.setenv(gguf.DEVICE_ENV, index)
+    with pytest.raises(ValueError, match="OMNIVOICE_GGUF_"):
+        gguf._spawn_env()
+
+
+def test_settings_cpu_pin_reaches_real_spawn_boundary(monkeypatch):
+    from core import prefs
+    from services import binary_preflight
+    from types import SimpleNamespace
+
+    monkeypatch.delenv("OMNIVOICE_DEVICE", raising=False)
+    monkeypatch.setattr(prefs, "resolve", lambda *args, **kwargs: "cpu")
+    monkeypatch.setenv(gguf.BACKEND_ENV, "vulkan")
+    monkeypatch.setattr(binary_preflight, "validate_executable", lambda *args, **kwargs: None)
+    captured = {}
+
+    def run(argv, **kwargs):
+        captured.update(kwargs)
+        return SimpleNamespace(returncode=0, stderr="")
+
+    monkeypatch.setattr(gguf.subprocess, "run", run)
+    gguf.OmniVoiceGGUFBackend()._run_subprocess(["tts"], stdin_text="hello")
+    assert captured["env"]["GGML_BACKEND"] == "CPU"
+
+
+def test_auto_preserves_native_selection(monkeypatch):
+    monkeypatch.setenv("OMNIVOICE_DEVICE", "auto")
+    monkeypatch.delenv(gguf.BACKEND_ENV, raising=False)
+    monkeypatch.delenv(gguf.DEVICE_ENV, raising=False)
+    monkeypatch.delenv("GGML_BACKEND", raising=False)
+    assert "GGML_BACKEND" not in gguf._spawn_env()
+
+
+def test_native_compatibility_retains_gpu_capability():
+    assert gguf.OmniVoiceGGUFBackend.gpu_compat == ("cuda", "vulkan", "mps", "cpu")

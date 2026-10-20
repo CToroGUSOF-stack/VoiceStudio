@@ -39,7 +39,7 @@ metadata and the backend fallback mirror it.
 
 ### Changed
 
-- Vulkan GPU acceleration for OmniVoice GGUF (`omnivoice-gguf`), enabling hardware acceleration on AMD Radeon and cross-vendor GPUs across Windows and Linux (#3042)
+- Optional Vulkan builds for OmniVoice GGUF on Windows and Linux, with CPU fallback, native device overrides, and conservative generation deadlines (#3042) — thanks @dutch2005!
 
 ### Docs
 

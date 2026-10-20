@@ -283,22 +283,3 @@ def test_generic_directml_loader_respects_selected_family(monkeypatch, npu_avail
     monkeypatch.setattr(model_manager, "_lazy_torch", lambda: torch)
     with patch.dict("sys.modules", modules):
         assert model_manager.get_best_device() == expected
-
-
-def test_vulkan_loader_present_stamps_marker_when_inventory_enabled(monkeypatch):
-    import ctypes
-    from core.device_caps import VULKAN_MARKER
-
-    monkeypatch.delenv("OMNIVOICE_DISABLE_GPU_INVENTORY", raising=False)
-    called_with = []
-
-    class _MockCDLL:
-        def LoadLibrary(self, name):
-            called_with.append(name)
-            return True
-
-    monkeypatch.setattr(ctypes, "cdll", _MockCDLL())
-    caps = _probe_with({"torch": _torch_mock()})
-    assert any(VULKAN_MARKER in n for n in caps.notes)
-    assert len(called_with) == 1
-

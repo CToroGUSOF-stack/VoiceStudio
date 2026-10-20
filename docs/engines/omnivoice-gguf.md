@@ -60,6 +60,28 @@ build falls back to CPU. Expect roughly 2–4x slower generation than macOS
 Metal while upstream Mesa and llama.cpp Vulkan optimizations mature; still
 well ahead of CPU-only.
 
+## Optional Vulkan acceleration
+
+Windows x64 and Linux x64/ARM64 source builds try Vulkan when the Vulkan SDK
+(Windows), or `glslc` and SPIRV headers (Linux), are available. Missing build
+dependencies or a failed Vulkan build fall back to CPU. The GPU backend ships
+as an optional GGML module beside the executable; keep those libraries with the
+binary. Install a working Vulkan GPU driver on the runtime host. Without one,
+automatic native backend selection retains its CPU path.
+
+The pinned runtime selects its own GPU independently of PyTorch. It cannot
+list its selected device, so VoiceStudio conservatively reports an unverified
+native device and uses the longer CPU generation budget. This does not disable
+native GPU acceleration. A Vulkan loader alone does not prove GPU support.
+
+Set `OMNIVOICE_GGUF_BACKEND` to `auto` (default), `cpu`, `cuda`, or `vulkan`.
+For CUDA/Vulkan, `OMNIVOICE_GGUF_DEVICE` selects a non-negative device index
+(default `0`). These map to the pinned runtime's `GGML_BACKEND` environment
+variable (`CPU`, `CUDA0`, `Vulkan0`, etc.); its CLI has no `--backend` or
+`--device` flags. Leave both unset for native automatic selection, including
+Metal on supported macOS builds. Settings' CPU compute choice, or
+`OMNIVOICE_DEVICE=cpu`, takes precedence over all native GPU overrides.
+
 ## Integrity and self-healing
 
 Before reporting ready, the engine:
