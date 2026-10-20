@@ -13,6 +13,7 @@ metadata and the backend fallback mirror it.
 - Preview iOS and Android companion apps for your own VoiceStudio
 
 ### Added
+- Opt-in native Windows ROCm source bootstrap with a reusable pinned recipe, hash-checked CTranslate2 wheels and offline GPU smoke; packaged setup and app GPU support are unchanged (#2468)
 
 - Preview iOS and Android companion apps: drive your own VoiceStudio from your phone (speak, voices and cloning, dubbing, dictation) after pairing by QR code; build from source for now ([guide](docs/mobile.md)) (#2965)
 - Smart Fit speed limits: set the fastest and slowest speed dubbing may apply to a line, from the Timing section (#3026) — thanks @MoonDragon-MD!
