@@ -138,3 +138,41 @@ def test_share_listener_lifecycle():
         # or a dirty module-level _state for the next test.
         if ns.get_state().enabled:
             asyncio.run(ns.disable(__import__("fastapi").FastAPI()))
+
+
+def test_share_listener_does_not_rerun_the_app_lifespan():
+    """The share listener serves the app the main server already started.
+
+    It must not run the app's lifespan again: enabling would repeat startup,
+    and disabling would run the full shutdown on the still-serving backend.
+    """
+    from contextlib import asynccontextmanager
+
+    from fastapi import FastAPI
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+        try:
+            probe.bind(("0.0.0.0", 0))
+        except OSError as e:
+            pytest.skip(f"binding 0.0.0.0 not permitted in this sandbox: {e}")
+
+    events = []
+
+    @asynccontextmanager
+    async def lifespan(_app):
+        events.append("startup")
+        yield
+        events.append("shutdown")
+
+    app = FastAPI(lifespan=lifespan)
+
+    async def exercise():
+        await ns.enable(app)
+        await ns.disable(app)
+
+    try:
+        asyncio.run(exercise())
+    finally:
+        if ns.get_state().enabled:
+            asyncio.run(ns.disable(FastAPI()))
+    assert events == []
