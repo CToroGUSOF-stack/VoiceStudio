@@ -247,14 +247,16 @@ def _split_sentences(
     )
     acronyms = r"([A-Z][.][A-Z][.](?:[A-Z][.])?)"
     websites = r"[.](com|net|org|io|gov|edu|me)"
-    digits = r"([0-9])"
     multiple_dots = r"\.{2,}"
 
     text = text.replace("\n", " ")
 
     text = re.sub(prefixes, rf"\1{prd}", text)
     text = re.sub(websites, rf"{prd}\1", text)
-    text = re.sub(digits + r"[.]" + digits, rf"\1{prd}\2", text)
+    # Lookarounds, not captures: a capturing match consumes the digit after
+    # the dot, so the second dot in "2.5.1" or "192.168.1.1" went unprotected
+    # and split the number across two sentences.
+    text = re.sub(r"(?<=[0-9])[.](?=[0-9])", prd, text)
     text = re.sub(multiple_dots, lambda m: prd * len(m.group(0)), text)
 
     if "Ph.D" in text:

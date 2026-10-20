@@ -79,3 +79,26 @@ def test_short_flush_ends_the_first_flush_window():
     clause = "However, the remaining answer keeps going for quite a while, and then"
     assert chunker.push(clause) == []
     assert chunker.flush() == [clause]
+
+
+@pytest.mark.parametrize("text", [
+    "Connect to the router at 192.168.1.1 and open the admin page in your browser.",
+    "We just shipped version 2.5.1 of the app, which fixes the login crash on startup.",
+])
+def test_dotted_numbers_stay_in_one_streamed_sentence(text):
+    """Every dot between two digits belongs to the number, not just the first."""
+    from api.routers.tts_stream import split_stream_sentences
+
+    assert split_stream_sentences(text, "English") == [text]
+    # LLM tokens carry their leading space (" 168") on the call-agent path.
+    words = text.split(" ")
+    assert _run_case([words[0], *(" " + w for w in words[1:])]) == [text]
+
+
+def test_a_sentence_after_a_dotted_number_still_splits():
+    from api.routers.tts_stream import split_stream_sentences
+
+    assert split_stream_sentences(
+        "Version 2.5.1 was released today. It fixed many bugs that users had reported.",
+        "English",
+    ) == ["Version 2.5.1 was released today.", "It fixed many bugs that users had reported."]
