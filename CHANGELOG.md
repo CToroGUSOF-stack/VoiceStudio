@@ -36,6 +36,10 @@ metadata and the backend fallback mirror it.
 
 - The installed app now rebuilds a Python environment that antivirus or disk cleanup removed, once per launch with the usual setup progress, instead of stopping at a setup error; your voices and projects are untouched (#3032) — thanks @afraniohugo and @javalovelinux-cmd!
 
+### Fixed
+
+- Smart Fit keeps overlapping speakers and captions on one timeline without replaying shared video — thanks @jonathanwxh-cell! (#3008)
+
 ### Docs
 
 - OmniVoice GGUF docs state that the installers do not ship its native binary yet (#3026) — thanks @DestinyQJY!
