@@ -355,7 +355,7 @@ function useGenerateController(): UseGenerateClone {
         announceResultNotices(result);
         setLatestOutput(result, design?.text ?? settings.text);
         recordActionBreadcrumb(`generate:${reportMode}:complete`);
-        toast.success(tr('tts.generationComplete'));
+        toast.success(tr('tts.generationComplete'), { position: 'top-right' });
         if (!design) rememberTake(result.id, settings);
         void Promise.all([
           queryClient.invalidateQueries({ queryKey: queryKeys.history }),
