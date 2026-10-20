@@ -183,14 +183,14 @@ try {
     });
     await macPage.goto(ui + '/#/clone');
     const macSidebar = macPage.locator('aside').first();
-    const macNotifications = macPage.locator('[data-slot=macos-system-notifications]');
+    const macNotifications = macPage.locator('[data-slot=account-corner]');
     const macNotificationBounds = await macNotifications.boundingBox();
     assert.ok(
       macNotificationBounds &&
         macNotificationBounds.y < 20 &&
         macNotificationBounds.x + macNotificationBounds.width >=
           (await macPage.evaluate(() => window.innerWidth)) - 20,
-      'macOS notifications must sit in the top-right titlebar corner',
+      'macOS account corner (account control and notifications) must sit in the top-right titlebar corner',
     );
     const titlebarActions = await macPage.locator('main .workspace-titlebar button').all();
     const titlebarActionBounds = (
@@ -204,7 +204,7 @@ try {
         ),
       'macOS titlebar actions must leave space before notifications',
     );
-    await macNotifications.getByRole('button').first().click();
+    await macNotifications.locator('button:has(.lucide-bell)').click();
     await macPage.locator('[data-slot=popover-content][data-open]').waitFor({ state: 'visible' });
     await macPage.keyboard.press('Escape');
     const brandLink = macSidebar.getByRole('link', { name: /^VoiceStudio v\S+/ });

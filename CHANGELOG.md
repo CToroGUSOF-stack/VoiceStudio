@@ -15,6 +15,27 @@ metadata and the backend fallback mirror it.
 ### Added
 
 - Preview iOS and Android companion apps: drive your own VoiceStudio from your phone (speak, voices and cloning, dubbing, dictation) after pairing by QR code; build from source for now ([guide](docs/mobile.md)) (#2965)
+- Smart Fit speed limits: set the fastest and slowest speed dubbing may apply to a line, from the Timing section (#3026) — thanks @MoonDragon-MD!
+
+### Fixed
+
+- Generated speech no longer starts and ends with silence, and `[pause]` markers give exactly the pause you asked for (Raw preset and explicit durations untouched) (#3080)
+- Engine sidecars no longer load PyTorch just to answer the Test Engine ping, and a failed test logs its reason locally (#3026) — thanks @tekay-de!
+
+### Fixed
+
+- Windows runtime refresh no longer fails with `EPERM` on a locked backend folder (OneDrive, antivirus): it updates the files in place; the missing-Python-environment message now names the exact folder and tells non-checkout installs to use the installer (#3023) — thanks @afraniohugo, @javalovelinux-cmd and @eduardpp00!
+
+### Fixed
+
+- The install location chosen in first-run setup now also holds your data, model cache and temp files instead of quietly filling `C:`, and the setup screen shows each path (#2971, #3035)
+- Supertonic-3's preset voices can be picked in the voice controls and are used for generation (#2938, #3035)
+
+- `OMNIVOICE_ENGINES_DIR` moves engine venvs and the audio.cpp runtime to another drive; the default location is unchanged (#3024)
+
+### Fixed
+
+- The installed app now rebuilds a Python environment that antivirus or disk cleanup removed, once per launch with the usual setup progress, instead of stopping at a setup error; your voices and projects are untouched (#3032) — thanks @afraniohugo and @javalovelinux-cmd!
 
 ### Changed
 
@@ -22,13 +43,21 @@ metadata and the backend fallback mirror it.
 
 ### Docs
 
+- OmniVoice GGUF docs state that the installers do not ship its native binary yet (#3026) — thanks @DestinyQJY!
 - Contributor guides and the pull request template explain how to sign the CLA before opening a first pull request (#2676)
+
+### Fixed
+
+- macOS builds without a Developer ID are now signed ad hoc so the bundle signature is valid, and the shell installer clears quarantine, repairs an invalid signature of older releases, names an unreadable disk image, and tells Intel Mac users the backend needs Apple Silicon (#3033, #2763, #2829, #2681)
+- A "Generation failed" log line now says where it was raised and which error caused it, and the out-of-memory advice mentions picking another GPU, so these reports can be told apart (#2895, #2684, #2666, #2626, #2622, #2580, #3034)
 
 ### CI
 
 - Desktop request-guard self-tests stay deterministic when app requests arrive during cleanup (#2676)
 
 - New `mobile` workflow builds and tests both phone apps; a contract test fails when their theme or API description drifts from the desktop app (#2965)
+
+- Gallery preview fallback smoke no longer flakes when a slower runner reads the playing clip in several byte ranges (#3018)
 
 ## [0.5.7] — 2026-10-17
 
@@ -184,6 +213,7 @@ This release also adds a GPU acceleration panel with honest Radeon reporting, th
 
 ### Fixed
 
+- Cloning without a transcript no longer dead-ends when speech-to-text is missing: the transcript preview reuses any installed model, and the Clone page offers a one-click install of the recommended one (#3036)
 - Dubbing can replace an uploaded source with a link without removing it first (#2944) — thanks @mvanhorn!
 - Open WebUI lists VoiceStudio voice profiles: each voice from `/v1/audio/voices` also carries the `id` field it reads (#2934) — thanks @chiarorosa!
 - Renders no longer wait out a network timeout each time the AudioSeal watermark checkpoint can't be fetched; a failed load is retried after 10 minutes (#2933) — thanks @chiarorosa!

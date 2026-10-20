@@ -34,8 +34,11 @@ try {
       if (width <= 1680) {
         await compactMain.waitFor();
         assert.equal(Math.round((await compactMain.boundingBox()).width), 48);
+        // The notifications bell lives in the top-right account corner on every page and
+        // platform, not in the sidebar.
+        assert.equal(await compactMain.locator("button .lucide-bell").count(), 0);
         assert.equal(
-          await compactMain.locator("button .lucide-bell").count(),
+          await page.locator('[data-slot="account-corner"] button .lucide-bell').count(),
           1,
         );
         // Voice, Stories and Dubbing are flyout group buttons; the other five are direct links.
@@ -88,8 +91,9 @@ try {
           .locator(".brand-sidebar")
           .filter({ hasText: "Saved voices" });
         assert.equal(await expandedMain.count(), 1);
+        assert.equal(await expandedMain.locator("button .lucide-bell").count(), 0);
         assert.equal(
-          await expandedMain.locator("button .lucide-bell").count(),
+          await page.locator('[data-slot="account-corner"] button .lucide-bell').count(),
           1,
         );
       }

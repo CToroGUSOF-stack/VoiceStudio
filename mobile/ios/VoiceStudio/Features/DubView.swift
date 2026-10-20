@@ -25,7 +25,8 @@ struct DubView: View {
                 if let selectedFile { SelectedFileRow(name: selectedFile.name) { self.selectedFile = nil } }
                 TextField(model.t("mobile.dub.paste_url"), text: $sourceURL).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled().accessibilityIdentifier("dub.source_url")
                 Button { selectingLanguages = true } label: {
-                    SelectionRow(label: model.t("mobile.dub.target_languages"), value: ListFormatter.localizedString(byJoining: languages.filter { selected.contains($0.code) }.map(\.name)))
+                    let names = languages.filter { selected.contains($0.code) }.map(\.name)
+                    SelectionRow(label: model.t("mobile.dub.target_languages"), value: names.isEmpty ? model.t("mobile.android.choose") : ListFormatter.localizedString(byJoining: names))
                 }.buttonStyle(VSButtonStyle(kind: .tertiary)).accessibilityIdentifier("dub.languages")
                 ScrollView(.horizontal) {
                     HStack(spacing: VSTokens.spacingGap) {
@@ -163,7 +164,7 @@ struct DubView: View {
     private func historyTitle(_ item: DubHistoryItem) -> some View {
         VStack(alignment: .leading, spacing: VSTokens.spacingGap) {
             Text(item.title).lineLimit(1).truncationMode(.middle)
-            Text(item.metadata(locale: Locale(identifier: model.l10n.locale)))
+            Text(item.metadata(l10n: model.l10n)).accessibilityIdentifier("dub.metadata." + item.id)
                 .font(.custom("InterVariable", size: VSTokens.textLabel.size, relativeTo: .caption))
                 .foregroundStyle(theme.color("textMuted")).lineLimit(1).truncationMode(.tail)
         }.frame(maxWidth: .infinity, alignment: .leading)

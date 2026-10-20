@@ -22,6 +22,9 @@
     "preset32": "原始",
     "sizeUnknown": "生成後顯示檔案大小。"
   },
+  "presetVoice": {
+    "label": "預設聲音"
+  },
   "audioQuality": {
     "check": "檢查音訊",
     "failed": "音訊分析無法使用。",
@@ -352,7 +355,9 @@
   },
   "referenceAsr": {
     "busy": "正在抄寫…",
-    "retry": "重試轉錄"
+    "retry": "重試轉錄",
+    "install": "安裝 {{label}}（{{size}} GB）以自動轉寫",
+    "installing": "正在下載 {{label}}，完成後將重新轉寫。"
   },
   "engineSidebar": {
     "tts": "TTS",
@@ -762,6 +767,9 @@
     "burn_subs_title": "將字幕直接渲染到 MP4 視訊串流中（硬字幕）。當雙字幕開啟時使用雙字幕格式。",
     "timing_smart_fit": "智慧適配",
     "timing_smart_fit_title": "兩邊各退一步：音訊稍微加速（保持音高，最高 1.5×），該片段的影片稍微放慢（最高 2×），讓自然語速的配音剛好放得下。超出上限的部分會被裁剪並標記。匯出時會重新編碼影片。",
+    "fit_speed_hint": "智慧適配的速度限制。範圍越窄語音越自然，範圍越寬越能在不裁剪的情況下容納更多台詞。預設值適合大多數影片。",
+    "fit_max_speed": "最快速度",
+    "fit_min_speed": "最慢速度",
     "voice_match": "音色匹配：",
     "voice_match_title": "音色匹配 — 每句配音是從自己的來源片段複製，還是同一說話者的所有句子共用一個參考。",
     "voice_match_per_line": "逐句",
@@ -2042,6 +2050,7 @@
     "setup_hint": "下載 Python 和應用程式相依套件（數 GB）。語音模型將在您選擇時個別安裝。",
     "installing": "正在安裝依賴項…",
     "setup_space": "請在應用程式所在磁碟上釋出至少 {{gib}} GiB 空間，然後重試。",
+    "repair_failed": "Python 環境的自動修復未完成。請查看引擎記錄，然後按一下重試。",
     "setup_access": "請允許寫入應用程式資料夾，然後重試。",
     "setup_unsupported_platform": "此 Intel Mac 無法執行本機 AI 後端——PyTorch 未提供 macOS Intel 建置。請在下方連接遠端後端，無需本機安裝。",
     "setup_wrong_architecture": "這是透過 Rosetta 在 Apple Silicon Mac 上執行的 VoiceStudio Intel (x64) 版本，因此無法安裝本機 AI 後端。請結束應用程式，覆蓋安裝 Apple Silicon (arm64) 版 DMG 後重新開啟——你的聲音與專案都會保留。",
@@ -2173,7 +2182,13 @@
     "consent_revoke": "撤銷",
     "consent_revoke_confirm": "撤銷語音所有權驗證？同意錄音將被刪除，代理功能將無法再使用此語音。",
     "consent_revoked": "驗證已撤銷",
-    "test_text": "你好——這是對這個聲音的測試。"
+    "test_text": "你好——這是對這個聲音的測試。",
+    "attest_explain": "只有在你確認有權使用某個聲音後，雲端同步才會分享它。",
+    "attest_own_voice": "這是我的聲音",
+    "attest_permission": "我已取得說話者的許可",
+    "attested_own_voice": "已確認：這是我的聲音",
+    "attested_permission": "已確認：我已取得說話者的許可",
+    "attest_clear": "移除確認"
   },
   "nav": {
     "home": "首頁",
@@ -2277,6 +2292,68 @@
     "no": "不用了，謝謝",
     "dismiss": "關閉（分析保持關閉）"
   },
+  "account": {
+    "title": "VoiceStudio 帳戶",
+    "setup_body": "選用。登入免費的 VoiceStudio 帳戶，即可在你的裝置之間同步設定。沒有帳戶也能使用所有功能，除非你開啟此項，否則不會傳送任何內容。你可以隨時在 設定 → 帳戶 中變更。",
+    "use_yes": "開啟帳戶功能",
+    "use_no": "全部保留在本機",
+    "features": "帳戶功能",
+    "features_desc": "關閉後，應用程式絕不會連線 VoiceStudio Cloud。",
+    "sync": "雲端同步",
+    "sync_desc": "關閉後會立即停止所有同步。此裝置上的內容不會被刪除。",
+    "sign_in": "登入",
+    "continue_in_browser": "請在瀏覽器中繼續…",
+    "cancel": "取消",
+    "sign_out": "登出",
+    "signed_in_as": "已登入為 {{name}}",
+    "signed_out_expired": "你已登出。請登入以繼續同步。",
+    "sign_in_failed": "登入已取消或失敗",
+    "offline": "離線：變更將稍後同步",
+    "not_remembered": "系統鑰匙圈無法使用，因此 VoiceStudio 重新啟動後你需要重新登入。",
+    "menu_settings": "帳戶設定",
+    "plan": "方案",
+    "storage": "雲端儲存空間",
+    "storage_used": "已用 {{used}} / {{limit}}",
+    "features_title": "你的方案包含",
+    "feature_settings_sync": "在裝置之間同步設定",
+    "feature_pro": "VoiceStudio Pro 功能",
+    "included": "已包含",
+    "not_included": "不在你的方案中",
+    "plan_ends": "至 {{date}}",
+    "details_failed": "無法載入你的帳戶詳細資料（{{reason}}）。",
+    "retry": "重試"
+  },
+  "cloudsync": {
+    "unavailable": "同步目前無法使用。",
+    "choose": "選擇要同步的內容",
+    "settings": "設定",
+    "shortcuts": "快速鍵",
+    "favorites": "圖庫最愛",
+    "turn_on": "開啟同步",
+    "device_revoked": "此裝置已從同步中移除。",
+    "set_up_again": "重新設定",
+    "account_suspended": "你的帳戶已被停權。本機功能仍可使用。",
+    "storage_full": "雲端儲存空間已滿（{{used}} / {{limit}}）。在有空間之前，變更會保留在此裝置上。",
+    "mass_delete": "要從雲端移除 {{count}} 個項目嗎？",
+    "confirm_remove": "移除",
+    "conflict": "已在另一部裝置上變更：{{keys}}",
+    "paused": "已被 VoiceStudio 暫停",
+    "needs_update": "請更新 VoiceStudio 以同步{{area}}。",
+    "size": "雲端佔用 {{size}}",
+    "turned_off_prompt": "要在此裝置上停止同步{{area}}嗎？",
+    "keep_in_cloud": "保留在雲端",
+    "remove_from_cloud": "同時從雲端移除（{{count}} 個項目，{{size}}）",
+    "voices": "聲音",
+    "takes": "錄音",
+    "projects": "專案",
+    "dub_projects": "配音專案",
+    "dictation_history": "聽寫記錄",
+    "pro": "Pro",
+    "use_choices_of": "使用與 {{device}} 相同的選擇",
+    "devices": "裝置",
+    "this_device": "此裝置",
+    "remove_device": "移除"
+  },
   "firstrun": {
     "stage_models": "模型與引擎",
     "chip_required": "必需",
@@ -2286,6 +2363,10 @@
     "lib_show_all": "顯示 {{count}} 個可選模型",
     "env_dir": "應用程式環境",
     "env_dir_desc": "Python 執行環境與 AI 函式庫。",
+    "env_dir_desc_scoped": "Python 執行環境、AI 程式庫、模型、你的資料與暫存檔案。",
+    "storage_data": "資料",
+    "storage_models": "模型",
+    "storage_temp": "暫存檔案",
     "change": "變更…",
     "reset_default": "重設為預設值",
     "region_label": "下載區域"
@@ -2817,7 +2898,13 @@
     "audio_io_failed": "無法讀取或儲存音訊。請檢查檔案格式、磁碟可用空間和檔案存取權限，並在設定 → 儲存空間中檢查資料夾。",
     "no_audio_track": "此檔案沒有音軌，因此沒有可轉錄、配音或複製的語音。請選擇包含聲音的影片或音訊檔案。",
     "transcription_media_tool": "轉錄需要 ffmpeg，但 VoiceStudio 找不到或無法執行它。請開啟設定 → 音訊工具並使用下載/修復，或安裝 ffmpeg（macOS：brew install ffmpeg；Windows：winget install Gyan.FFmpeg；Linux：你的套件管理員），然後重新啟動 VoiceStudio。你也可以將 FFMPEG_PATH 指向 ffmpeg 執行檔。",
-    "transcription_pipe_lost": "轉錄期間後端失去了通往應用程式的輸出管道（broken pipe）。請重新啟動 VoiceStudio 後再試一次。"
+    "transcription_pipe_lost": "轉錄期間後端失去了通往應用程式的輸出管道（broken pipe）。請重新啟動 VoiceStudio 後再試一次。",
+    "gpu_oom": "GPU 記憶體不足。請關閉其他佔用 GPU 的應用程式或卸載模型後重試。你也可以在 設定 → 效能與裝置 中選擇 CPU，或選擇較小的 TTS 引擎。",
+    "host_memory_exhausted": "電腦記憶體不足。請關閉其他佔用記憶體的應用程式和瀏覽器分頁，卸載不用的模型，產生較短的片段，或選擇更輕量的 TTS 引擎。",
+    "engine_dependency_missing": "此引擎所需的 Python 套件尚未安裝，因此引擎無法啟動。請開啟模型目錄，選擇該引擎並使用 安裝 / 修復，然後重新啟動 VoiceStudio。",
+    "reference_stt_missing": "此聲音沒有逐字稿，也沒有安裝可用於產生逐字稿的語音轉文字模型。請在逐字稿欄位輸入參考音訊所說的內容（音訊不超過 20 秒），或在模型目錄中安裝並選擇一個語音轉文字模型，然後重新產生。",
+    "proxy_gateway_error": "你與 VoiceStudio 之間的代理或閘道回傳了 HTTP {{status}}，而不是後端的回應。後端可能仍在處理。對於較長的產生作業，請調高代理的讀取逾時（nginx 為 proxy_read_timeout），然後查看 設定 → 記錄 → 後端。",
+    "route_not_found": "正在執行的 VoiceStudio 後端沒有 {{route}} 端點。請重新啟動 VoiceStudio 使應用程式與後端一致；若仍然如此，請將兩者更新到同一版本。"
   },
   "network": {
     "copied": "已複製",

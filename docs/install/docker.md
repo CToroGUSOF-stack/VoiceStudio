@@ -32,6 +32,22 @@ On an ARM64 host, pulling without an explicit platform can fail with
   below. This is an emulated CPU option, not native
   ARM64 support; inference can be much slower and is not a GPU workaround.
   Without emulation, use an AMD64 server for this Docker deployment.
+- **ARM64 + NVIDIA GPU (DGX Spark / GB10, GH200):** no image is published, but
+  `deploy/Dockerfile` builds natively. Prepare a base image from `ubuntu:24.04`
+  with `python3`, `torch==2.8.0` from the `cu129` PyTorch index (`cu128` has no
+  aarch64 2.8.0), `torchaudio==2.8.0` and `torchvision==0.23.0` installed with
+  `--no-deps`, plus apt `build-essential pkg-config cmake libopus-dev` (`sphn`
+  has no aarch64 wheel and builds against Opus). Then:
+
+  ```bash
+  docker build -f deploy/Dockerfile --build-arg BASE_IMAGE=<your-base> -t voicestudio:arm64-cuda .
+  ```
+
+  The Dockerfile skips the cuDNN 8 compatibility step on aarch64 because NVIDIA
+  ships no aarch64 wheel for it, so CTranslate2-based ASR engines (faster-whisper,
+  WhisperX) report unavailable; PyTorch engines such as OmniVoice, CosyVoice and
+  `pytorch-whisper` use the GPU. This recipe is community-validated on v0.5.6,
+  not a supported or CI-tested image.
 
 ## Image tags
 

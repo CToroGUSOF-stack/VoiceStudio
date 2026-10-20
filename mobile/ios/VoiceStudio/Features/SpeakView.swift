@@ -31,7 +31,17 @@ struct SpeakView: View {
     var body: some View {
         Page {
             TextEditor(text: $text).frame(minHeight: VSTokens.textEditor.lineHeight * 6)
-                .scrollContentBackground(.hidden).padding(Theme.compactInset)
+                .scrollContentBackground(.hidden)
+                .overlay(alignment: .topLeading) {
+                    if text.isEmpty {
+                        Text(model.t("mobile.speak.placeholder"))
+                            .foregroundStyle(theme.color("placeholder"))
+                            .padding(.horizontal, VSTokens.spacingGap / 3)
+                            .padding(.vertical, VSTokens.spacingGap / 2)
+                            .allowsHitTesting(false).accessibilityHidden(true)
+                    }
+                }
+                .padding(Theme.compactInset)
                 .background(theme.color("input"), in: RoundedRectangle(cornerRadius: VSTokens.radiusControl))
                 .accessibilityLabel(model.t("mobile.speak.placeholder")).accessibilityIdentifier("speak.text")
             Card {

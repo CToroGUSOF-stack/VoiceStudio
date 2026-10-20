@@ -76,23 +76,30 @@ struct RootView: View {
     var body: some View {
         let theme = Theme(palette: model.theme.palette(system: scheme == .dark ? .dark : .light), appearance: model.theme.appearance(system: scheme == .dark ? .dark : .light))
         Group {
-            if !model.consentAnswered { ConsentView() }
-            else {
-                TabView {
-                    if model.connection.client == nil {
-                        NavigationStack { ConnectView() }.tabItem { Label(model.t("mobile.tabs.connect"), systemImage: "link") }
-                    } else {
-                        NavigationStack { SpeakView() }.tabItem { Label(model.t("mobile.tabs.speak"), systemImage: "waveform") }
-                        NavigationStack { VoicesView() }.tabItem { Label(model.t("mobile.tabs.voices"), systemImage: "person.wave.2") }
-                        NavigationStack { DubView() }.tabItem { Label(model.t("mobile.tabs.dub"), systemImage: "film") }
-                        NavigationStack { DictateView() }.tabItem { Label(model.t("mobile.tabs.dictate"), systemImage: "mic") }
-                    }
-                    NavigationStack { SettingsView() }.tabItem { Label(model.t("mobile.tabs.settings"), systemImage: "gearshape") }
+            TabView {
+                if model.connection.client == nil {
+                    NavigationStack { ConnectView() }.tabItem { Label(model.t("mobile.tabs.connect"), systemImage: "link") }
+                } else {
+                    NavigationStack { SpeakView() }.tabItem { Label(model.t("mobile.tabs.speak"), systemImage: "waveform") }
+                    NavigationStack { VoicesView() }.tabItem { Label(model.t("mobile.tabs.voices"), systemImage: "person.wave.2") }
+                    NavigationStack { DubView() }.tabItem { Label(model.t("mobile.tabs.dub"), systemImage: "film") }
+                    NavigationStack { DictateView() }.tabItem { Label(model.t("mobile.tabs.dictate"), systemImage: "mic") }
                 }
-                .id(model.hostState.scopeID)
-                .toolbarBackground(theme.color("chrome"), for: .tabBar)
-                .toolbarBackground(.visible, for: .tabBar)
+                NavigationStack { SettingsView() }.tabItem { Label(model.t("mobile.tabs.settings"), systemImage: "gearshape") }
             }
+            .id(model.hostState.scopeID)
+            .toolbarBackground(theme.color("chrome"), for: .tabBar)
+            .toolbarBackground(.visible, for: .tabBar)
+        }
+        .sheet(isPresented: Binding(get: { !model.consentAnswered }, set: { presented in
+            if !presented && !model.consentAnswered { model.chooseConsent(false) }
+        }), onDismiss: {
+            if !model.consentAnswered { model.chooseConsent(false) }
+        }) {
+            ConsentView()
+                .presentationBackground(theme.color("surfaceOverlay"))
+                .presentationCornerRadius(VSTokens.radiusLg)
+                .presentationDragIndicator(.visible)
         }
         .onAppear { NativeTheme.apply(theme) }
         .onChange(of: model.theme) { _, _ in NativeTheme.apply(theme) }
@@ -122,19 +129,26 @@ struct RootView: View {
 struct ConsentView: View {
     @Environment(AppModel.self) private var model
     var body: some View {
-        Page {
-            Text(model.t("privacy.analytics_title")).font(.custom("InterVariable", size: VSTokens.textEditor.size, relativeTo: .title))
-            Text(model.t("privacy.analytics_subtitle"))
-            Text(model.t("mobile.ios.privacy_local"))
+        Page(backgroundRole: "surfaceOverlay") {
+            Text(model.t("consent.title"))
+                .font(.custom("InterVariable", size: Theme.titleTypeSize, relativeTo: .title).weight(.semibold))
+                .accessibilityAddTraits(.isHeader).accessibilityIdentifier("consent.title")
+            Text(model.t("consent.body"))
+            Text(model.t("mobile.android.analytics_local"))
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: VSTokens.spacingGap) { choice(true); choice(false) }
                 VStack(spacing: VSTokens.spacingGap) { choice(true); choice(false) }
             }
-            Button(model.t("common.dismiss")) { model.chooseConsent(false) }.accessibilityIdentifier("consent.dismiss")
-        }.interactiveDismissDisabled()
+        }
+        .accessibilityAction(.escape) { model.chooseConsent(false) }
     }
-    func choice(_ value: Bool) -> some View {
-        Button(model.t(value ? "common.yes" : "common.no")) { model.chooseConsent(value) }
-            .buttonStyle(VSButtonStyle(kind: .secondary)).frame(maxWidth: .infinity).accessibilityIdentifier(value ? "consent.yes" : "consent.no")
+    @ViewBuilder func choice(_ value: Bool) -> some View {
+        let button = Button { model.chooseConsent(value) } label: {
+            Text(model.t(value ? "consent.yes" : "consent.no"))
+                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity)
+        }.buttonStyle(VSButtonStyle(kind: .secondary)).accessibilityIdentifier(value ? "consent.yes" : "consent.no")
+        if value { button }
+        else { button.keyboardShortcut(.cancelAction) }
     }
 }

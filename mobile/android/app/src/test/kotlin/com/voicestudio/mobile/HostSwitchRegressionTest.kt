@@ -183,7 +183,12 @@ class HostSwitchRegressionTest {
                 }
             }
         }
-        compose.waitUntil(5000) {compose.onAllNodesWithText(copy).fetchSemanticsNodes().isNotEmpty()}
+        // The receipt reaches the screen through a main-looper observer; drive the looper
+        // while waiting so a slow CI runner can't time out on an idle queue.
+        compose.waitUntil(20000) {
+            shadowOf(Looper.getMainLooper()).idle()
+            compose.onAllNodesWithText(copy).fetchSemanticsNodes().isNotEmpty()
+        }
         compose.onNodeWithText(copy).assertExists()
         compose.runOnIdle {shown=false};compose.waitForIdle()
         // Recreate the view model/store as on a new launch; receipts must be durable.

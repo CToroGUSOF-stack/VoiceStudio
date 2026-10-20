@@ -8,9 +8,11 @@ Shared store inputs and platform handoffs are defined in
 Mac App Store are not maintained release channels until each has completed its
 first verified production publication.
 
-Snap Store packaging is rehearsed separately through
-`.github/workflows/snap-store.yml`; it is build-only until the owner reserves
-the package name and supplies scoped credentials. Follow the
+Snap Store packaging runs through `.github/workflows/snap-store.yml`. Each
+`v*` tag builds the strict Snap and uploads it to the Store's `candidate`
+channel using `SNAPCRAFT_STORE_CREDENTIALS` from the `snap-store` environment.
+Stable is never automatic: after the runbook checks, the repository owner
+dispatches the workflow with `promote_revision`. Follow the
 [`Snap Store runbook`](store-publishing/snap-store.md) for confinement checks,
 candidate verification, evidence and rollback. Do not add a Snap to the
 maintained-channel table below until its stable listing is independently
@@ -122,7 +124,8 @@ updates a draft, and uploads:
 - authored CHANGELOG release notes
 - immutable copies of the final Tauri updater feeds for old clients
 
-Tag pushes never publish, and they do not build Docker images. Inspect the
+Tag pushes never publish the Electron GitHub Release, and they do not build
+Docker images (the Snap workflow above uploads tags to `candidate` only). Inspect the
 draft and downloaded installers first.
 
 If the workflow itself needs a fix after tagging, keep the tag immutable. Merge

@@ -42,6 +42,7 @@ import {
 } from '@/lib/store/clone-settings';
 import { cn } from '@/lib/utils';
 import { EngineLanguagePicker } from './engine-language-picker';
+import { PresetVoicePicker } from './preset-voice-picker';
 import { QualityControls } from './quality-controls';
 import { CloneDemoAction } from './clone-demo';
 import { useCloneDemo } from '@/hooks/use-clone-demo';
@@ -408,6 +409,7 @@ export function ActionBar() {
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-1 rounded-lg bg-background/50 p-1 ring-1 ring-border/50">
           <EngineLanguagePicker />
+          <PresetVoicePicker disabled={isGenerating} />
           <span aria-hidden="true" className="mx-1 h-4 w-px bg-border" />
           <QualityControls disabled={isGenerating} />
           <VoiceControls />
