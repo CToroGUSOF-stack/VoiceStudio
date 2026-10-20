@@ -19,11 +19,32 @@ is the thin impure wrapper.
 """
 from __future__ import annotations
 
+import os
 import sys
 from typing import Any
 
-from core.device_caps import KERNEL_RISK_MARKER, HostCaps
+from core.device_caps import ACCELERATOR_PRIORITY, KERNEL_RISK_MARKER, HostCaps
 from core.gpu_inventory import HostGPU, detect_host_gpus, discrete_candidates, pick_for_build
+
+#: Device families PyTorch can accelerate on. An engine whose targets include
+#: anything else (Vulkan, a DirectML string) picks its device through its own
+#: runtime, not through PyTorch.
+_PYTORCH_FAMILIES = frozenset(ACCELERATOR_PRIORITY)
+
+
+def _cuda_forced() -> bool:
+    """``OMNIVOICE_FORCE_CUDA`` asks for CUDA even when the installed wheel
+    cannot drive the card (#3067).
+
+    ``services.model_manager.get_best_device`` honors the same flag, so the
+    report must agree with it: a forced host runs on the GPU and may fail at
+    kernel launch, which is a caveat rather than a host that cannot use its
+    card.
+    """
+    return os.environ.get("OMNIVOICE_FORCE_CUDA", "").strip().lower() in {
+        "1", "true", "yes", "on",
+    }
+
 
 # Host states in which a physical GPU exists that PyTorch cannot drive.
 UNUSABLE_GPU_STATES = frozenset({
@@ -34,6 +55,7 @@ UNUSABLE_GPU_STATES = frozenset({
     "nvidia_cuda_unavailable",
     "nvidia_rocm_build",
     "intel_unsupported",
+    "kernels_missing",
 })
 
 #: What the user can honestly do about each host state, most useful first. Each
@@ -49,6 +71,9 @@ _OPTIONS: dict[str, tuple[str, ...]] = {
     "amd_rocm_no_device:linux": ("rocm_device_access",),
     "nvidia_cpu_build": ("reinstall_cuda_torch",),
     "nvidia_cuda_unavailable": ("update_nvidia_driver",),
+    # The wheel is right, the card's architecture is not in it: a driver
+    # update cannot add the missing kernels, so it is not offered (#3067).
+    "kernels_missing": ("install_matching_torch",),
 }
 
 
@@ -77,11 +102,9 @@ def classify_host(
     """``(state_code, params)`` — why this host is, or is not, GPU-accelerated."""
     if not caps.probe_ok:
         return "probe_failed", {}
-    if caps.family != "cpu":
-        if any(KERNEL_RISK_MARKER in n for n in caps.notes):
-            return "accelerated_caveat", {"family": caps.family, "device": caps.device_name}
-        return "accelerated", {"family": caps.family, "device": caps.device_name}
     if caps.requested_family == "cpu" and len(caps.available_families) > 1:
+        # The user pinned the compute device to the CPU, so the GPU is not
+        # used at all - whatever the wheel can or cannot do with the card.
         return "pinned_cpu", {}
 
     kind = build.get("kind")
@@ -89,6 +112,38 @@ def classify_host(
     # host a CUDA build that finds nothing is an NVIDIA problem, not an AMD one.
     card = pick_for_build(gpus, str(kind))
     params = {"build": kind, "torch": build.get("version")}
+
+    # The installed wheel has no kernels for this card's compute architecture
+    # (an sm_52 Maxwell on torch 2.8+cu128, which ships sm_70+, #3067). The
+    # loader already falls back to the CPU for such a card, so the report must
+    # not tell the user the GPU is in use — whatever the probe advertised. The
+    # driver works and the wheel does not, so the remedy is a build that
+    # covers the architecture; a driver update cannot add the missing kernels.
+    #
+    # Only when the rejected card is what the engine would have used: with a
+    # working XPU or MPS alongside it, the engine runs there and the missing
+    # CUDA kernels change nothing.
+    if (
+        any(KERNEL_RISK_MARKER in n for n in caps.notes)
+        and not _cuda_forced()
+        and caps.family in ("cuda", "rocm", "cpu")
+    ):
+        return "kernels_missing", {
+            # The probed device is the one the kernel check tested. The
+            # inventory only knows the cards the OS lists, and on a multi-GPU
+            # host its first card of this vendor is not necessarily device 0.
+            "gpu": caps.device_name or (card.name if card is not None else ""),
+            **params,
+        }
+
+    if caps.family != "cpu":
+        if any(KERNEL_RISK_MARKER in n for n in caps.notes):
+            # The user forced CUDA (OMNIVOICE_FORCE_CUDA), so the engine runs
+            # on the GPU and may fail at kernel launch: a caveat, not a host
+            # that cannot use its card.
+            return "accelerated_caveat", {"family": caps.family, "device": caps.device_name}
+        return "accelerated", {"family": caps.family, "device": caps.device_name}
+
     if card is not None and card.vendor == "amd":
         code = {
             "cuda": "amd_cuda_build",
@@ -118,8 +173,29 @@ def _engine_entry(row: dict, kind: str, host_code: str) -> dict[str, Any]:
         # says. The row still tells the picker it needs installing.
         code, params = "not_installed", {"needs": ", ".join(compat)}
     elif status == "accelerated":
-        code = "gpu_caveat" if row.get("routing_reason") else "gpu"
-        params = {"device": device}
+        # An engine accelerates through PyTorch when every compute target it
+        # declares is a PyTorch family and it names no runtime of its own.
+        # audio.cpp is the counter-example: it runs its own Vulkan, CUDA or
+        # ROCm build and reports that device, so it does use the card even
+        # when PyTorch cannot drive it.
+        targets = {t for t in compat if t != "cpu"}
+        rides_on_pytorch = bool(targets) and targets <= _PYTORCH_FAMILIES
+        if (
+            host_code in UNUSABLE_GPU_STATES
+            and rides_on_pytorch
+            and not row.get("runtime_backend")
+        ):
+            # A host whose card PyTorch cannot drive wins over the routing
+            # verdict: the engine runs on the CPU whatever the static routing
+            # says (#3067).
+            device = "cpu"
+            if host_code.startswith("amd_"):
+                code = "host_gpu_unusable_rocm" if "rocm" in compat else "host_gpu_unusable_no_amd_path"
+            else:
+                code = "host_gpu_unusable"
+        else:
+            code = "gpu_caveat" if row.get("routing_reason") else "gpu"
+            params = {"device": device}
     elif status == "unavailable":
         code, params = "needs_accelerator", {"needs": ", ".join(compat)}
     elif compat == ("cpu",):
