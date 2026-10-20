@@ -20,6 +20,8 @@ metadata and the backend fallback mirror it.
 ### Fixed
 
 - Engine sidecars no longer load PyTorch just to answer the Test Engine ping, and a failed test logs its reason locally (#3026) — thanks @tekay-de!
+- The Windows, Linux and Apple Silicon installers include the OmniVoice GGUF engine, which was always reported unavailable (#2780)
+- The GGUF engine runs on every x86-64 processor instead of crashing on CPUs without AVX-512, and says so when a runtime cannot run on yours (#2780)
 
 ### Fixed
 
